@@ -19,6 +19,8 @@
 
 package edu.uci.ics.texera.service
 
+import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.services.s3.{S3Client, S3Configuration}
 import com.fasterxml.jackson.databind.module.SimpleModule
 import io.dropwizard.core.Application
 import io.dropwizard.core.setup.{Bootstrap, Environment}
@@ -31,6 +33,7 @@ import edu.uci.ics.texera.auth.{JwtAuthFilter, SessionUser}
 import edu.uci.ics.texera.dao.SqlServer
 import edu.uci.ics.texera.service.`type`.DatasetFileNode
 import edu.uci.ics.texera.service.`type`.serde.DatasetFileNodeSerializer
+import edu.uci.ics.texera.service.S3LifecycleManager
 import edu.uci.ics.texera.service.resource.{
   DatasetAccessResource,
   DatasetResource,
@@ -39,6 +42,7 @@ import edu.uci.ics.texera.service.resource.{
 import edu.uci.ics.texera.service.util.S3StorageClient
 import io.dropwizard.auth.AuthDynamicFeature
 import org.eclipse.jetty.server.session.SessionHandler
+import software.amazon.awssdk.regions.Region
 
 class FileService extends Application[FileServiceConfiguration] with LazyLogging {
   override def initialize(bootstrap: Bootstrap[FileServiceConfiguration]): Unit = {
@@ -62,6 +66,22 @@ class FileService extends Application[FileServiceConfiguration] with LazyLogging
 
     // check if the texera dataset bucket exists, if not create it
     S3StorageClient.createBucketIfNotExist(StorageConfig.lakefsBucketName)
+
+    // setup MinIO lifecycle rules via S3 Gateway API
+    val credentials = AwsBasicCredentials.create(StorageConfig.s3Username, StorageConfig.s3Password)
+    val s3Client: S3Client = {
+      S3Client
+        .builder()
+        .credentialsProvider(StaticCredentialsProvider.create(credentials))
+        .region(Region.of(StorageConfig.s3Region))
+        .endpointOverride(java.net.URI.create(StorageConfig.s3Endpoint)) // MinIO URL
+        .serviceConfiguration(
+          S3Configuration.builder().pathStyleAccessEnabled(true).build()
+        )
+        .build()
+    }
+    S3LifecycleManager.configLifecycleRules(s3Client)
+
     // check if we can connect to the lakeFS service
     LakeFSStorageClient.healthCheck()
 
