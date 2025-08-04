@@ -89,7 +89,7 @@ export class DownloadService {
     versionName: string
   ): void {
     this.notificationService.info(`Starting to download version ${versionName} as ZIP`);
-    this.datasetService.retrieveDatasetVersionZipViaBrowser(datasetId, datasetVersionId);
+    this.datasetService.retrieveDatasetVersionZipViaBrowser(datasetId, datasetVersionId, versionName);
   }
 
   downloadDatasetVersion(

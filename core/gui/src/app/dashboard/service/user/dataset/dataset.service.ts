@@ -120,13 +120,15 @@ export class DatasetService {
    * Retrieves a zip file of a dataset version.
    * @param did Dataset ID
    * @param dvid (Optional) Dataset version ID. If omitted, the latest version is downloaded.
+   * @param vname
    * @returns An Observable that emits a Blob containing the zip file.
    */
-  public retrieveDatasetVersionZipViaBrowser(did: number, dvid?: number): void {
+  public retrieveDatasetVersionZipViaBrowser(did: number, dvid?: number, vname?: string): void {
     let params = new HttpParams();
 
-    if (dvid !== undefined && dvid !== null) {
+    if (dvid !== undefined && dvid !== null && vname !== undefined && vname !== null) {
       params = params.set("dvid", dvid.toString());
+      params = params.set("vname", vname);
     } else {
       params = params.set("latest", "true");
     }

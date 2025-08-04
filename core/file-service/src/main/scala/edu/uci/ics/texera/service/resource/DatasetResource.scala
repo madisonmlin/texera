@@ -1012,6 +1012,7 @@ class DatasetResource {
   def getDatasetVersionZipWithS3(
       @PathParam("did") did: Integer,
       @QueryParam("dvid") dvid: Integer, // Dataset version ID, nullable
+      @QueryParam("vname") vname: String, // Version name, nullable
       @QueryParam("latest") latest: java.lang.Boolean, // Flag to get latest version, nullable
       @Auth user: SessionUser
   ): Response = {
@@ -1031,7 +1032,8 @@ class DatasetResource {
       } else {
         val tmpZip = createLocalZip(datasetName, versionHash, objects)
         try {
-          val zipPath = s"tmp/zips/$datasetName-$versionHash.zip"
+          val versionSuffix = if (vname != null && vname.nonEmpty) s"-$vname" else ""
+          val zipPath = s"tmp/zips/$datasetName$versionSuffix.zip"
           val presignedZipUrl = uploadZipAndGetPresignedZipUrl(datasetName, zipPath, tmpZip)
 
           Response.ok(Map("presignedUrl" -> presignedZipUrl)).build()
