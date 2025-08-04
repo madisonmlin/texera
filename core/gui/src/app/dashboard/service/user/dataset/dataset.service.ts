@@ -122,6 +122,36 @@ export class DatasetService {
    * @param dvid (Optional) Dataset version ID. If omitted, the latest version is downloaded.
    * @returns An Observable that emits a Blob containing the zip file.
    */
+  public retrieveDatasetVersionZipViaBrowser(did: number, dvid?: number): void {
+    let params = new HttpParams();
+
+    if (dvid !== undefined && dvid !== null) {
+      params = params.set("dvid", dvid.toString());
+    } else {
+      params = params.set("latest", "true");
+    }
+
+    const endpoint = `${AppSettings.getApiEndpoint()}/dataset/${did}/versionZipS3`;
+
+    this.http.get<{ presignedUrl: string }>(endpoint, { params }).subscribe({
+      next: (response) => {
+        const presignedUrl = response.presignedUrl
+        const downloadUrl = document.createElement("a");
+
+        downloadUrl.href = presignedUrl;
+        document.body.appendChild(downloadUrl);
+        downloadUrl.click();
+        downloadUrl.remove();
+      }
+    })
+  }
+
+  /**
+   * Retrieves a zip file of a dataset version.
+   * @param did Dataset ID
+   * @param dvid (Optional) Dataset version ID. If omitted, the latest version is downloaded.
+   * @returns An Observable that emits a Blob containing the zip file.
+   */
   public retrieveDatasetVersionZip(did: number, dvid?: number): Observable<Blob> {
     let params = new HttpParams();
 

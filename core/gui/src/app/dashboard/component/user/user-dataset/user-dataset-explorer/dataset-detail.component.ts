@@ -191,11 +191,18 @@ export class DatasetDetailComponent implements OnInit {
   }
 
   public onClickDownloadVersionAsZip() {
+    const DOWNLOAD_VIA_BROWSER = true;
+
     if (this.did && this.selectedVersion && this.selectedVersion.dvid) {
-      this.downloadService
-        .downloadDatasetVersion(this.did, this.selectedVersion.dvid, this.datasetName, this.selectedVersion.name)
-        .pipe(untilDestroyed(this))
-        .subscribe();
+      if (DOWNLOAD_VIA_BROWSER) {
+        this.downloadService
+          .downloadDatasetVersionViaBrowser(this.did, this.selectedVersion.dvid, this.selectedVersion.name)
+      } else {
+        this.downloadService
+          .downloadDatasetVersion(this.did, this.selectedVersion.dvid, this.datasetName, this.selectedVersion.name)
+          .pipe(untilDestroyed(this))
+          .subscribe();
+      }
     }
   }
 

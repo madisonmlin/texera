@@ -71,13 +71,14 @@ import edu.uci.ics.texera.service.util.S3StorageClient.{
 }
 import edu.uci.ics.texera.config.GuiConfig
 import io.dropwizard.auth.Auth
+import io.lakefs.clients.sdk.model.ObjectStats
 import jakarta.annotation.security.RolesAllowed
 import jakarta.ws.rs._
 import jakarta.ws.rs.core.{Context, HttpHeaders, MediaType, Response, StreamingOutput}
 import org.jooq.{DSLContext, EnumType}
 
 import java.util
-import java.io.{InputStream, OutputStream}
+import java.io.{File, FileInputStream, FileOutputStream, InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL, URLDecoder}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
@@ -1007,6 +1008,43 @@ class DatasetResource {
 
   @GET
   @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/{did}/versionZipS3")
+  def getDatasetVersionZipWithS3(
+      @PathParam("did") did: Integer,
+      @QueryParam("dvid") dvid: Integer, // Dataset version ID, nullable
+      @QueryParam("latest") latest: java.lang.Boolean, // Flag to get latest version, nullable
+      @Auth user: SessionUser
+  ): Response = {
+
+    withTransaction(context) { ctx =>
+      val datasetVersion = resolveDatasetVersion(ctx, did, dvid, latest)
+      val dataset = getDatasetByID(ctx, did)
+      val datasetName = dataset.getName
+      val versionHash = datasetVersion.getVersionHash
+
+      val objects = LakeFSStorageClient.retrieveObjectsOfVersion(datasetName, versionHash)
+      if (objects.isEmpty) {
+        Response
+          .status(Response.Status.NOT_FOUND)
+          .entity(s"No objects found in version $versionHash of repository $datasetName")
+          .build()
+      } else {
+        val tmpZip = createLocalZip(datasetName, versionHash, objects)
+        try {
+          val zipPath = s"tmp/zips/$datasetName-$versionHash.zip"
+          val presignedZipUrl = uploadZipAndGetPresignedZipUrl(datasetName, zipPath, tmpZip)
+
+          Response.ok(Map("presignedUrl" -> presignedZipUrl)).build()
+
+        } finally {
+          tmpZip.delete()
+        }
+      }
+    }
+  }
+
+  @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/{did}/versionZip")
   def getDatasetVersionZip(
       @PathParam("did") did: Integer,
@@ -1321,5 +1359,160 @@ class DatasetResource {
         }
         Right(response)
     }
+  }
+
+  private def resolveDatasetVersion(
+      context: DSLContext,
+      did: Integer,
+      dvid: Integer,
+      latest: java.lang.Boolean
+  ): DatasetVersion = {
+    if ((dvid != null && latest != null) || (dvid == null && latest == null)) {
+      throw new BadRequestException("Specify exactly one: dvid=<ID> OR latest=true")
+    }
+
+    // Determine which version to retrieve
+    if (dvid != null) {
+      getDatasetVersionByID(context, dvid)
+    } else if (java.lang.Boolean.TRUE.equals(latest)) {
+      getLatestDatasetVersion(context, did).getOrElse(
+        throw new NotFoundException(ERR_DATASET_VERSION_NOT_FOUND_MESSAGE)
+      )
+    } else {
+      throw new BadRequestException("Invalid parameters")
+    }
+  }
+
+  private def createLocalZip(
+      datasetName: String,
+      versionHash: String,
+      objects: List[ObjectStats]
+  ): File = {
+    val tmpZip = Files.createTempFile(s"$datasetName-$versionHash", ".zip").toFile
+    val zipOut = new ZipOutputStream(new FileOutputStream(tmpZip))
+
+    try {
+      objects.foreach { obj =>
+        val presignedFileUrl = LakeFSStorageClient.getFilePresignedUrl(
+          repoName = datasetName,
+          commitHash = versionHash,
+          filePath = obj.getPath
+        )
+
+        streamPresignedFileUrlIntoZip(obj.getPath, presignedFileUrl, zipOut, tmpZip)
+      }
+    } finally {
+      zipOut.close()
+    }
+
+    tmpZip
+  }
+
+  private def streamPresignedFileUrlIntoZip(
+      fileName: String,
+      presignedFileUrl: String,
+      zipOut: ZipOutputStream,
+      tmpZip: File
+  ): Unit = {
+    import java.io._
+    import java.net.URL
+    import java.util.zip.ZipEntry
+
+    val inputStream = new BufferedInputStream(new URL(presignedFileUrl).openStream())
+    try {
+      zipOut.putNextEntry(new ZipEntry(fileName))
+      val buffer = new Array[Byte](PART_SIZE.toInt)
+      Iterator
+        .continually(inputStream.read(buffer))
+        .takeWhile(_ != -1)
+        .foreach(read => zipOut.write(buffer, 0, read))
+      zipOut.closeEntry()
+    } finally {
+      inputStream.close()
+    }
+  }
+
+  private def uploadZipAndGetPresignedZipUrl(
+      datasetName: String,
+      zipPath: String,
+      tmpZip: File
+  ): String = {
+    val numParts = Math.ceil(tmpZip.length().toDouble / PART_SIZE.toDouble).toInt
+
+    val presignedResponse =
+      LakeFSStorageClient.initiatePresignedMultipartUploads(datasetName, zipPath, numParts)
+    val uploadId = presignedResponse.getUploadId
+    val etags = uploadFileInParts(tmpZip, presignedResponse.getPresignedUrls.asScala.toSeq)
+
+    LakeFSStorageClient.completePresignedMultipartUploads(
+      datasetName,
+      zipPath,
+      uploadId,
+      etags,
+      presignedResponse.getPhysicalAddress
+    )
+
+    S3StorageClient.getFilePresignedUrl(
+      repoName = datasetName,
+      commitHash = "main",
+      filePath = zipPath,
+      fileName = tmpZip.getName,
+      contentType = "application/zip",
+      expirationMinutes = 10
+    )
+  }
+
+  private def uploadFileInParts(file: File, presignedUrls: Seq[String]): List[(Int, String)] = {
+    val inputStream = new FileInputStream(file)
+    val buffer = new Array[Byte](PART_SIZE.toInt)
+    var partNumber = 1
+    var bytesRead = 0
+    var etags: List[(Int, String)] = Nil
+
+    try {
+      presignedUrls.foreach { urlStr =>
+        // Read next chunk
+        bytesRead = inputStream.read(buffer)
+        if (bytesRead == -1) {
+          throw new RuntimeException(
+            s"Unexpected EOF: fewer parts than presigned URLs for file ${file.getName}"
+          )
+        }
+
+        // Open HTTP connection
+        val url = new URL(urlStr)
+        val connection = url.openConnection().asInstanceOf[HttpURLConnection]
+        connection.setDoOutput(true)
+        connection.setRequestMethod("PUT")
+        connection.setFixedLengthStreamingMode(bytesRead)
+        connection.setRequestProperty("Content-Type", "application/octet-stream")
+
+        // Write chunk
+        val outputStream = connection.getOutputStream
+        outputStream.write(buffer, 0, bytesRead)
+        outputStream.flush()
+        outputStream.close()
+
+        // Check response
+        val responseCode = connection.getResponseCode
+        if (responseCode < 200 || responseCode >= 300) {
+          throw new RuntimeException(
+            s"Upload failed for part $partNumber with response code $responseCode"
+          )
+        }
+
+        // Extract ETag header (required for finalizing multipart upload)
+        val eTag = Option(connection.getHeaderField("ETag"))
+          .map(_.replaceAll("\"", "")) // remove quotes if present
+          .getOrElse(throw new RuntimeException(s"Missing ETag in response for part $partNumber"))
+
+        etags = etags :+ (partNumber, eTag)
+        partNumber += 1
+      }
+    } finally {
+      inputStream.close()
+    }
+
+    etags
   }
 }

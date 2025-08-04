@@ -207,7 +207,13 @@ export class ListItemComponent implements OnChanges {
         .pipe(untilDestroyed(this))
         .subscribe();
     } else if (this.entry.type === "dataset") {
-      this.downloadService.downloadDataset(this.entry.id, this.entry.name).pipe(untilDestroyed(this)).subscribe();
+      const DOWNLOAD_VIA_BROWSER = true;
+
+      if (DOWNLOAD_VIA_BROWSER) {
+        this.downloadService.downloadDatasetViaBrowser(this.entry.id)
+      } else {
+        this.downloadService.downloadDataset(this.entry.id, this.entry.name).pipe(untilDestroyed(this)).subscribe();
+      }
     }
   };
 

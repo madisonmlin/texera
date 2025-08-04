@@ -68,6 +68,11 @@ export class DownloadService {
     );
   }
 
+  downloadDatasetViaBrowser(id: number): void {
+    this.notificationService.info("Starting to download the latest version of the dataset as ZIP");
+    this.datasetService.retrieveDatasetVersionZipViaBrowser(id)
+  }
+
   downloadDataset(id: number, name: string): Observable<Blob> {
     return this.downloadWithNotification(
       () => this.datasetService.retrieveDatasetVersionZip(id),
@@ -76,6 +81,15 @@ export class DownloadService {
       "The latest version of the dataset has been downloaded as ZIP",
       "Error downloading the latest version of the dataset as ZIP"
     );
+  }
+
+  downloadDatasetVersionViaBrowser(
+    datasetId: number,
+    datasetVersionId: number,
+    versionName: string
+  ): void {
+    this.notificationService.info(`Starting to download version ${versionName} as ZIP`);
+    this.datasetService.retrieveDatasetVersionZipViaBrowser(datasetId, datasetVersionId);
   }
 
   downloadDatasetVersion(
