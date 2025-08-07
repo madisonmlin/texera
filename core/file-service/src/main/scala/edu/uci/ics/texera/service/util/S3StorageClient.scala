@@ -20,6 +20,8 @@
 package edu.uci.ics.texera.service.util
 
 import edu.uci.ics.amber.config.StorageConfig
+import edu.uci.ics.amber.core.storage.util.LakeFSStorageClient.{branchName, experimentalApi}
+import io.lakefs.clients.sdk.model.{AbortPresignMultipartUpload, CompletePresignMultipartUpload, ObjectStats, PresignMultipartUpload, UploadPart}
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.{S3Client, S3Configuration}
@@ -27,7 +29,9 @@ import software.amazon.awssdk.services.s3.model._
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
+import software.amazon.awssdk.services.s3.model.UploadPartRequest
 
+import java.io.InputStream
 import java.net.URI
 import java.time.Duration
 import java.security.MessageDigest
@@ -41,13 +45,14 @@ import scala.jdk.CollectionConverters._
 object S3StorageClient {
   val MINIMUM_NUM_OF_MULTIPART_S3_PART: Long = 5L * 1024 * 1024 // 5 MiB
   val MAXIMUM_NUM_OF_MULTIPART_S3_PARTS = 10_000
-  val credentials = AwsBasicCredentials.create(StorageConfig.s3Username, StorageConfig.s3Password)
+  val s3Credentials = AwsBasicCredentials.create(StorageConfig.s3Username, StorageConfig.s3Password)
+  val lakefsCredentials = AwsBasicCredentials.create(StorageConfig.lakefsUsername, StorageConfig.lakefsPassword)
 
   // Initialize MinIO-compatible S3 Client
   private lazy val s3Client: S3Client = {
     S3Client
       .builder()
-      .credentialsProvider(StaticCredentialsProvider.create(credentials))
+      .credentialsProvider(StaticCredentialsProvider.create(s3Credentials))
       .region(Region.of(StorageConfig.s3Region))
       .endpointOverride(java.net.URI.create(StorageConfig.s3Endpoint)) // MinIO URL
       .serviceConfiguration(
@@ -56,23 +61,37 @@ object S3StorageClient {
       .build()
   }
 
+  val lakefsFullUri = new URI(StorageConfig.lakefsEndpoint)
+  val lakefsBaseUri = new URI(
+    lakefsFullUri.getScheme,
+    null,
+    lakefsFullUri.getHost,
+    lakefsFullUri.getPort,
+    null,
+    null,
+    null
+  ) // Extract just the base (scheme + host + port)
+
+  // Initialize S3-compatible S3 Client
+  private lazy val s3LakefsClient: S3Client = {
+    S3Client
+      .builder()
+      .credentialsProvider(StaticCredentialsProvider.create(lakefsCredentials))
+      .region(Region.of(StorageConfig.s3Region))
+      .endpointOverride(lakefsBaseUri) // LakeFS base URL ("http://localhost:8000" on local)
+      .serviceConfiguration(
+        S3Configuration.builder().pathStyleAccessEnabled(true).build()
+      )
+      .build()
+  }
+
   // Initialize S3-compatible presigner for LakeFS S3 Gateway
   private lazy val s3Presigner: S3Presigner = {
-    val fullUri = new URI(StorageConfig.lakefsEndpoint)
-    val baseUri = new URI(
-      fullUri.getScheme,
-      null,
-      fullUri.getHost,
-      fullUri.getPort,
-      null,
-      null,
-      null
-    ) // Extract just the base (scheme + host + port)
     S3Presigner
       .builder()
-      .credentialsProvider(StaticCredentialsProvider.create(credentials))
+      .credentialsProvider(StaticCredentialsProvider.create(s3Credentials))
       .region(Region.of(StorageConfig.s3Region))
-      .endpointOverride(baseUri) // LakeFS base URL ("http://localhost:8000" on local)
+      .endpointOverride(lakefsBaseUri) // LakeFS base URL ("http://localhost:8000" on local)
       .serviceConfiguration(
         S3Configuration.builder().pathStyleAccessEnabled(true).build()
       )
@@ -203,5 +222,119 @@ object S3StorageClient {
     val presignedUrl = s3Presigner.presignGetObject(presignRequest).url().toString
     s3Presigner.close()
     presignedUrl
+  }
+
+  /**
+   * Initiates a presigned multipart upload for a file in LakeFS.
+   *
+   * @param repoName     Repository name.
+   * @param filePath     File path within the repository.
+   * @return             Multipart upload information.
+   */
+  def initiateMultipartUploads(
+   repoName: String,
+   filePath: String
+  ): String = {
+
+    val req = CreateMultipartUploadRequest.builder()
+      .bucket(repoName)
+      .key(filePath)
+      .build()
+
+    val res = s3LakefsClient.createMultipartUpload(req)
+    res.uploadId()
+  }
+
+  /**
+   * Uploads a part in a previously initiated multipart upload.
+   *
+   * @param repoName      Repository name.
+   * @param filePath      File path within the repository.
+   * @param uploadId      Upload ID of the previously initiated multipart upload.
+   * @param partNumber    Number of the part being uploaded.
+   * @param data          File data being uploaded in the part.
+   * @param size          Size of the part.
+   * @return              eTag of the uploaded part.
+   */
+  def uploadPart(
+    repoName: String,
+    filePath: String,
+    uploadId: String,
+    partNumber: Int,
+    data: InputStream,
+    size: Long
+  ): String = {
+
+    val req = UploadPartRequest.builder()
+      .bucket(repoName)
+      .key(filePath)
+      .uploadId(uploadId)
+      .partNumber(partNumber)
+      .contentLength(size)
+      .build()
+
+    val res = s3LakefsClient.uploadPart(req, software.amazon.awssdk.core.sync.RequestBody.fromInputStream(data, size))
+    res.eTag()
+  }
+
+  /**
+   * Completes a previously initiated multipart upload.
+   *
+   * @param repoName        Repository name.
+   * @param filePath        File path within the repository.
+   * @param uploadId        Multipart upload ID.
+   * @param partsList       List of (part number, ETag) pairs.
+   * @return                Object metadata after completion.
+   */
+  def completeMultipartUploads(
+    repoName: String,
+    filePath: String,
+    uploadId: String,
+    partsList: List[(Int, String)]
+  ): CompleteMultipartUploadResponse = {
+
+    val completedParts = partsList.map { case (num, etag) =>
+      CompletedPart.builder()
+        .partNumber(num)
+        .eTag(etag)
+        .build()
+    }
+
+    val compReq = CompletedMultipartUpload.builder()
+      .parts(completedParts: _*)
+      .build()
+
+    val req = CompleteMultipartUploadRequest.builder()
+      .bucket(repoName)
+      .key(filePath)
+      .uploadId(uploadId)
+      .multipartUpload(compReq)
+      .build()
+
+    s3LakefsClient.completeMultipartUpload(req)
+  }
+
+  /**
+   * Aborts a multipart upload operation for a given file.
+   *
+   * @param repoName        Repository name.
+   * @param filePath        File path within the repository.
+   * @param uploadId        Multipart upload ID.
+   * @param physicalAddress Physical address of the file.
+   */
+  def abortPresignedMultipartUploads(
+    repoName: String,
+    filePath: String,
+    uploadId: String,
+    physicalAddress: String
+  ): Unit = {
+
+    val req = AbortMultipartUploadRequest.builder()
+      .bucket(repoName)
+      .key(filePath)
+      .uploadId(uploadId)
+      .build()
+
+    s3LakefsClient.abortMultipartUpload(req)
   }
 }
