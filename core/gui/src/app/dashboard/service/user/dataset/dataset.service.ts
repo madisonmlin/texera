@@ -123,12 +123,11 @@ export class DatasetService {
    * @param vname
    * @returns An Observable that emits a Blob containing the zip file.
    */
-  public retrieveDatasetVersionZipViaBrowser(did: number, dvid?: number, vname?: string): void {
+  public retrieveDatasetVersionZipViaBrowser(did: number, dvid?: number): void {
     let params = new HttpParams();
 
-    if (dvid !== undefined && dvid !== null && vname !== undefined && vname !== null) {
+    if (dvid !== undefined && dvid !== null) {
       params = params.set("dvid", dvid.toString());
-      params = params.set("vname", vname);
     } else {
       params = params.set("latest", "true");
     }

@@ -981,7 +981,6 @@ class DatasetResource {
   def getDatasetVersionZipWithS3(
       @PathParam("did") did: Integer,
       @QueryParam("dvid") dvid: Integer, // Dataset version ID, nullable
-      @QueryParam("vname") vname: String, // Version name, nullable
       @QueryParam("latest") latest: java.lang.Boolean, // Flag to get latest version, nullable
       @Auth user: SessionUser
   ): Response = {
@@ -991,6 +990,7 @@ class DatasetResource {
       val dataset = getDatasetByID(ctx, did)
       val datasetName = dataset.getName
       val versionHash = datasetVersion.getVersionHash
+      val versionName = datasetVersion.getName
 
       val objects = LakeFSStorageClient.retrieveObjectsOfVersion(datasetName, versionHash)
       if (objects.isEmpty) {
@@ -1001,7 +1001,7 @@ class DatasetResource {
       } else {
 
         val zipBranch = "main"
-        val versionSuffix = if (vname != null && vname.nonEmpty) s"-$vname" else ""
+        val versionSuffix = if (latest != null && versionName.nonEmpty) s"-$versionName" else ""
         val zipPath = s"tmp/zips/$datasetName$versionSuffix.zip"
         val zipKey = s"$zipBranch/$zipPath"
 
