@@ -132,6 +132,18 @@
               nzType="comment"></span>
             <span>Forum</span>
           </li>
+          <li
+            *ngIf="sidebarTabs.scgpt_enabled"
+            nz-menu-item
+            nz-tooltip="Run scGPT cell annotation"
+            nzMatchRouter="true"
+            nzTooltipPlacement="right"
+            [routerLink]="DASHBOARD_USER_SCGPT">
+            <span
+              nz-icon
+              nzType="experiment"></span>
+            <span>scGPT</span>
+          </li>
         </ul>
       </li>
 

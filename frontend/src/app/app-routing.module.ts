@@ -22,6 +22,7 @@ import { CanActivateFn, Router, RouterModule, Routes } from "@angular/router";
 import { DashboardComponent } from "./dashboard/component/dashboard.component";
 import { UserWorkflowComponent } from "./dashboard/component/user/user-workflow/user-workflow.component";
 import { UserQuotaComponent } from "./dashboard/component/user/user-quota/user-quota.component";
+import { UserScGPTComponent } from "./dashboard/component/user/user-scgpt/user-scgpt.component";
 import { UserProjectSectionComponent } from "./dashboard/component/user/user-project/user-project-section/user-project-section.component";
 import { UserProjectComponent } from "./dashboard/component/user/user-project/user-project.component";
 import { UserComputingUnitComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit.component";
@@ -143,6 +144,10 @@ routes.push({
           path: "discussion",
           component: FlarumComponent,
         },
+        {
+          path: "scgpt",
+          component: UserScGPTComponent,
+        }
       ],
     },
     {

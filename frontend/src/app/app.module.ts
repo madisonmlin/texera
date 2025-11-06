@@ -58,6 +58,7 @@ import { UserWorkflowComponent } from "./dashboard/component/user/user-workflow/
 import { ShareAccessComponent } from "./dashboard/component/user/share-access/share-access.component";
 import { WorkflowExecutionHistoryComponent } from "./dashboard/component/user/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
 import { UserQuotaComponent } from "./dashboard/component/user/user-quota/user-quota.component";
+import { UserScGPTComponent } from "./dashboard/component/user/user-scgpt/user-scgpt.component";
 import { UserIconComponent } from "./dashboard/component/user/user-icon/user-icon.component";
 import { UserAvatarComponent } from "./dashboard/component/user/user-avatar/user-avatar.component";
 import { CodeEditorComponent } from "./workspace/component/code-editor-dialog/code-editor.component";
@@ -215,6 +216,7 @@ registerLocaleData(en);
     LocalLoginComponent,
     UserWorkflowComponent,
     UserQuotaComponent,
+    UserScGPTComponent,
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,
