@@ -18,13 +18,48 @@
  */
 
 import { Component, inject, OnInit } from "@angular/core";
+import {DASHBOARD_USER_SCGPT} from "../../../../app-routing.constant";
+import {NzModalService} from "ng-zorro-antd/modal";
+import {UserService} from "../../../../common/service/user/user.service";
+import {Router} from "@angular/router";
+import {SearchService} from "../../../service/user/search.service";
+import {DatasetService} from "../../../service/user/dataset/dataset.service";
+import {NzMessageService} from "ng-zorro-antd/message";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 
+@UntilDestroy()
 @Component({
   templateUrl: "./user-scgpt.component.html",
   styleUrls: ["./user-scgpt.component.scss"]
 })
 export class UserScGPTComponent implements OnInit {
+  public isLogin = this.userService.isLogin();
+  public currentUid = this.userService.getCurrentUser()?.uid;
+
+  constructor(
+    private modalService: NzModalService,
+    private userService: UserService,
+    private router: Router,
+    private searchService: SearchService,
+    private datasetService: DatasetService,
+    private message: NzMessageService
+  ) {
+    this.userService
+      .userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.isLogin = this.userService.isLogin();
+        this.currentUid = this.userService.getCurrentUser()?.uid;
+      });
+  }
+
   ngOnInit(): void {
+    return;
+  }
+
+  public onClickOpenScGPTJobAddComponent(): void {
+    console.log("Clicked.");
+    this.router.navigate([`${DASHBOARD_USER_SCGPT}/1`]);
     return;
   }
 }

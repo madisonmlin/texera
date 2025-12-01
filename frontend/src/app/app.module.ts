@@ -188,6 +188,7 @@ import { RegistrationRequestModalComponent } from "./common/service/user/registr
 import { MarkdownDescriptionComponent } from "./dashboard/component/user/markdown-description/markdown-description.component";
 import { UserComputingUnitComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit.component";
 import { UserComputingUnitListItemComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit-list-item/user-computing-unit-list-item.component";
+import { ScGPTJobCreationComponent } from "./dashboard/component/user/user-scgpt/scgpt-job-creation/scgpt-job-creation.component";
 
 registerLocaleData(en);
 
@@ -217,6 +218,7 @@ registerLocaleData(en);
     UserWorkflowComponent,
     UserQuotaComponent,
     UserScGPTComponent,
+    ScGPTJobCreationComponent,
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,

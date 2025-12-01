@@ -43,6 +43,7 @@ import { DASHBOARD_ABOUT, DASHBOARD_USER_WORKFLOW } from "./app-routing.constant
 import { HubSearchResultComponent } from "./hub/component/hub-search-result/hub-search-result.component";
 import { AdminSettingsComponent } from "./dashboard/component/admin/settings/admin-settings.component";
 import { GuiConfigService } from "./common/service/gui-config.service";
+import { ScGPTJobCreationComponent } from "./dashboard/component/user/user-scgpt/scgpt-job-creation/scgpt-job-creation.component";
 
 const rootRedirectGuard: CanActivateFn = () => {
   const config = inject(GuiConfigService);
@@ -147,6 +148,10 @@ routes.push({
         {
           path: "scgpt",
           component: UserScGPTComponent,
+        },
+        {
+          path: "scgpt/:jid",
+          component: ScGPTJobCreationComponent,
         }
       ],
     },
