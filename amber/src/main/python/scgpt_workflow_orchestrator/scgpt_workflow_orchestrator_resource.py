@@ -22,8 +22,12 @@ SCGPT_WORKFLOW_TEMPLATE_FILEPATH = "workflow_templates/scatter-plot-workflow.jso
 with open(SCGPT_WORKFLOW_TEMPLATE_FILEPATH, "r", encoding="utf-8") as file:
     scgpt_workflow_template = json.load(file)
 
-class Parameters(BaseModel):
+class BuildParameters(BaseModel):
     filepath: str
+    token: str
+
+class RunParameters(BaseModel):
+    wid: int
     token: str
 
 @app.get("/")
@@ -31,22 +35,26 @@ async def root():
     return {"message": "Hello World"}
 
 @app.post("/run-scgpt")
-async def run_scGPT(params: Parameters):
-
-    update_workflow_params(params)
-    dashboard_workflow = create_scgpt_workflow(params.token)
-    print(f"DASHBOARD WORKFLOW:\n{dashboard_workflow}")
-    wid = dashboard_workflow["workflow"]["wid"]
-    workflow = retrieve_scgpt_workflow(params.token, wid)
+async def run_scGPT(params: RunParameters):
+    workflow = retrieve_scgpt_workflow(params.token, params.wid)
     print(f"WORKFLOW:\n{workflow}")
     cu = create_scgpt_computing_unit(params.token)
     print(f"COMPUTING UNIT:\n{cu}")
     cuid = cu["computingUnit"]["cuid"]
     uid = get_uid(params.token)
-    response = await run_scgpt_workflow(params.token, workflow, wid, uid, cuid)
+    response = await run_scgpt_workflow(params.token, workflow, params.wid, uid, cuid)
     return response
 
-def update_workflow_params(params: Parameters):
+@app.post("/build-scgpt")
+def build_scGPT(params: BuildParameters):
+    update_workflow_params(params)
+    dashboard_workflow = create_scgpt_workflow(params.token)
+    print(f"DASHBOARD WORKFLOW:\n{dashboard_workflow}")
+    wid = dashboard_workflow["workflow"]["wid"]
+    set_workflow_access(params.token, wid, "READ")
+    return {"wid": wid}
+
+def update_workflow_params(params: BuildParameters):
     operator_idx = 0
     param_name = "fileName"
     param_value = params.filepath
@@ -69,6 +77,14 @@ def create_scgpt_workflow(token: str) -> None:
     }
     response = requests.post(urlpath, json=request_body, headers=headers)
     return response.json()
+
+def set_workflow_access(token: str, wid: int, privilege: str) -> None:
+    urlpath = f"http://localhost:8080/api/access/workflow/update-self/{wid}/{privilege}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    requests.put(urlpath, headers=headers)
 
 def retrieve_scgpt_workflow(token: str, wid: int):
     urlpath = f"http://localhost:8080/api/workflow/{wid}"

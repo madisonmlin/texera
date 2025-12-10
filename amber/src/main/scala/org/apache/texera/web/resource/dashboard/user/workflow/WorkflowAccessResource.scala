@@ -215,6 +215,45 @@ class WorkflowAccessResource() {
   }
 
   /**
+   * This method updates the user's own access type for a given workflow, given they are the owner
+   *
+   * @param wid       the given workflow
+   * @param privilege the type of Access given to the user (self)
+   * @return rejection if user is not the owner of the workflow
+   */
+  @PUT
+  @Path("/update-self/{wid}/{privilege}")
+  def updateSelfAccess(
+                    @PathParam("wid") wid: Integer,
+                    @PathParam("privilege") privilege: String,
+                    @Auth user: SessionUser
+                  ): Unit = {
+    val email = user.getEmail
+    val userUid = userDao.fetchOneByEmail(email).getUid
+    val workflowOwnerUid = context
+      .select(WORKFLOW_OF_USER.UID)
+      .from(WORKFLOW_OF_USER)
+      .where(WORKFLOW_OF_USER.WID.eq(wid))
+      .fetchOneInto(classOf[Integer])
+    if (userUid != workflowOwnerUid) {
+      throw new ForbiddenException("You are not the owner of this workflow. This endpoint only allows the owner of a workflow to modify their own permissions.")
+    }
+
+    try {
+      workflowUserAccessDao.merge(
+        new WorkflowUserAccess(
+          userUid,
+          wid,
+          PrivilegeEnum.valueOf(privilege)
+        )
+      )
+    } catch {
+      case _: NullPointerException =>
+        throw new BadRequestException(s"User $email Not Found!")
+    }
+  }
+
+  /**
     * This method identifies the user access level of the given workflow
     *
     * @param wid   the given workflow

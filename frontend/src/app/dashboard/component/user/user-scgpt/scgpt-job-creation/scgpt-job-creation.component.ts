@@ -38,6 +38,7 @@ import {AppSettings} from "../../../../../common/app-setting";
 import {WorkflowResultDownloadabilityResponse} from "../../../../service/user/download/download.service";
 import {HttpClient} from "@angular/common/http";
 import {TOKEN_KEY} from "../../../../../common/service/user/auth.service";
+import {ShareAccessService} from "../../../../service/user/share-access/share-access.service";
 
 @UntilDestroy()
 @Component({
@@ -117,6 +118,7 @@ export class ScGPTJobCreationComponent implements OnInit {
     private computingUnitStatusService: ComputingUnitStatusService,
     private computingUnitService: WorkflowComputingUnitManagingService,
     private workflowPersistService: WorkflowPersistService,
+    private accessService: ShareAccessService,
     private http: HttpClient
   ) {
     this.userService
@@ -131,8 +133,8 @@ export class ScGPTJobCreationComponent implements OnInit {
   /*
     Insert user-inputted parameters into the template workflow, assign it a computing unit, and execute the workflow
    */
-  private executeTemplateWorkflow(): void {
-    const urlPath = "http://127.0.0.1:8017/run-scgpt";
+  private buildTemplateWorkflow(): void {
+    const urlPath = "http://127.0.0.1:8019/build-scgpt";
     const token = localStorage.getItem(TOKEN_KEY) ?? "";
     const requestBody = {
       filepath: this.model.filePath,
@@ -142,16 +144,22 @@ export class ScGPTJobCreationComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(
         (response) => {
-          console.log(response);
-          if (response.status == "success") {
-            this.showDownloadButton = true
-          } else {
-            this.notificationService.error("Workflow failed.")
-            this.showDownloadButton = false
-          }
-          this.wid = response.wid
+          // this.accessService.grantAccess()this.userService.getCurrentUser()?.email
+          this.wid = response.wid;
         }
       );
+      // .subscribe(
+      //   (response) => {
+      //     console.log(response);
+      //     if (response.status == "success") {
+      //       this.showDownloadButton = true
+      //     } else {
+      //       this.notificationService.error("Workflow failed.")
+      //       this.showDownloadButton = false
+      //     }
+      //     this.wid = response.wid
+      //   }
+      // );
 
     // this.updateAllOperatorParameters();
     // this.setComputingUnit();
@@ -220,7 +228,7 @@ export class ScGPTJobCreationComponent implements OnInit {
   validateScGPTJobForm(): void {
     // Perform validation here
     if (this.form.valid) {
-      this.executeTemplateWorkflow();
+      this.buildTemplateWorkflow();
     }
   }
 

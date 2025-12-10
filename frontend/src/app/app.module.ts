@@ -189,6 +189,9 @@ import { MarkdownDescriptionComponent } from "./dashboard/component/user/markdow
 import { UserComputingUnitComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit.component";
 import { UserComputingUnitListItemComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit-list-item/user-computing-unit-list-item.component";
 import { ScGPTJobCreationComponent } from "./dashboard/component/user/user-scgpt/scgpt-job-creation/scgpt-job-creation.component";
+import {
+  ReadonlyEmbeddedWorkspaceComponent
+} from "./dashboard/component/user/user-scgpt/readonly-embedded-workspace/readonly-embedded-workspace.component";
 
 registerLocaleData(en);
 
@@ -219,6 +222,7 @@ registerLocaleData(en);
     UserQuotaComponent,
     UserScGPTComponent,
     ScGPTJobCreationComponent,
+    ReadonlyEmbeddedWorkspaceComponent,
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,
