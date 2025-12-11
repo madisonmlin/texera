@@ -21,7 +21,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  HostListener,
+  HostListener, Input,
   OnDestroy,
   OnInit,
   Type,
@@ -51,6 +51,7 @@ import { PanelService } from "../../service/panel/panel.service";
 })
 export class PropertyEditorComponent implements OnInit, OnDestroy {
   @ViewChild("contentWrapper") contentWrapperRef!: ElementRef;
+  @Input() dragBoundary: string = "texera-workspace";
   protected readonly window = window;
   id = -1;
   width = 260;

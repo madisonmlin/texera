@@ -83,6 +83,7 @@ export class ReadonlyEmbeddedWorkspaceComponent implements AfterViewInit, OnInit
   ngOnInit() {
     /** Highlight operators on hover */
     this.workflowActionService.setHighlightingEnabled(true);
+    this.codeEditorService.dragBoundary = "texera-readonly-embedded-workspace";
   }
 
   ngAfterViewInit(): void {

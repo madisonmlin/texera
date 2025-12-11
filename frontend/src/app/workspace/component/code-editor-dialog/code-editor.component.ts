@@ -74,6 +74,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   @ViewChild("container", { static: true }) containerElement!: ElementRef;
   @ViewChild(AnnotationSuggestionComponent) annotationSuggestion!: AnnotationSuggestionComponent;
   @ViewChild(BreakpointConditionInputComponent) breakpointConditionInput!: BreakpointConditionInputComponent;
+  @Input() dragBoundary: string = "texera-workspace";
   private code?: YText;
   private workflowVersionStreamSubject: Subject<void> = new Subject<void>();
   public currentOperatorId!: string;

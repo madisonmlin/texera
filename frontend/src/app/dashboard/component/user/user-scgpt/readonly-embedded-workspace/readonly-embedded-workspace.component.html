@@ -24,13 +24,13 @@
     nzTip="Loading workflow..."></nz-spin>
 </div>
 <div id="result">
-  <texera-result-panel></texera-result-panel>
+  <texera-result-panel [dragBoundary]="'texera-readonly-embedded-workspace'"></texera-result-panel>
 </div>
 <texera-workflow-editor></texera-workflow-editor>
 <texera-menu
   [writeAccess]="writeAccess">
 </texera-menu>
 <texera-mini-map class="box"></texera-mini-map>
-<texera-left-panel> </texera-left-panel>
-<texera-property-editor></texera-property-editor>
+<texera-left-panel [dragBoundary]="'texera-readonly-embedded-workspace'"> </texera-left-panel>
+<texera-property-editor [dragBoundary]="'texera-readonly-embedded-workspace'"></texera-property-editor>
 <ng-template #codeEditor></ng-template>

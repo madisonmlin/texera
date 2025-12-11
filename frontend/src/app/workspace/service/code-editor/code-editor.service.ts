@@ -25,6 +25,7 @@ import { BehaviorSubject, Observable } from "rxjs";
 })
 export class CodeEditorService {
   public vc!: ViewContainerRef;
+  public dragBoundary: string = "texera-workspace";
 
   private editorStates: Map<string, BehaviorSubject<boolean>> = new Map();
 

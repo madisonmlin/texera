@@ -74,6 +74,7 @@ export class CodeareaCustomTemplateComponent extends FieldType<FieldTypeConfig> 
     this.componentRef = this.codeEditorService.vc.createComponent(CodeEditorComponent);
     this.componentRef.instance.componentRef = this.componentRef;
     this.componentRef.instance.formControl = this.field.formControl;
+    this.componentRef.instance.dragBoundary = this.codeEditorService.dragBoundary;
     this.isEditorOpen = true;
 
     this.codeEditorService.setEditorState(this.operatorID, true);
