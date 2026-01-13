@@ -138,7 +138,8 @@ export class ReadonlyEmbeddedWorkspaceComponent implements AfterViewInit, OnInit
           this.workflowActionService.setNewSharedModel(this.wid, this.userService.getCurrentUser());
 
           // load the fetched workflow
-          this.workflowActionService.reloadWorkflow(workflow);
+          const displayAsReadonly = true;
+          this.workflowActionService.reloadWorkflow(workflow, undefined, displayAsReadonly);
 
           // clear stack
           this.undoRedoService.clearUndoStack();

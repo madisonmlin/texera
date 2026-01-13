@@ -51,7 +51,6 @@ def build_scGPT(params: BuildParameters):
     dashboard_workflow = create_scgpt_workflow(params.token)
     print(f"DASHBOARD WORKFLOW:\n{dashboard_workflow}")
     wid = dashboard_workflow["workflow"]["wid"]
-    set_workflow_access(params.token, wid, "READ")
     return {"wid": wid}
 
 def update_workflow_params(params: BuildParameters):
@@ -77,14 +76,6 @@ def create_scgpt_workflow(token: str) -> None:
     }
     response = requests.post(urlpath, json=request_body, headers=headers)
     return response.json()
-
-def set_workflow_access(token: str, wid: int, privilege: str) -> None:
-    urlpath = f"http://localhost:8080/api/access/workflow/update-self/{wid}/{privilege}"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json"
-    }
-    requests.put(urlpath, headers=headers)
 
 def retrieve_scgpt_workflow(token: str, wid: int):
     urlpath = f"http://localhost:8080/api/workflow/{wid}"

@@ -97,6 +97,7 @@ export class WorkflowActionService {
 
   private workflowSettings: WorkflowSettings;
   private workflowResetSubject = new Subject<void>();
+  private workflowDisplayedAsReadonly = false;
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
@@ -135,7 +136,7 @@ export class WorkflowActionService {
    * Workflow modification lock interface (allows or prevents commands that would modify the workflow graph).
    */
   public enableWorkflowModification() {
-    if (!this.workflowMetadata.readonly && !this.workflowModificationEnabled) {
+    if (!this.workflowDisplayedAsReadonly && !this.workflowMetadata.readonly && !this.workflowModificationEnabled) {
       this.workflowModificationEnabled = true;
       this.enableModificationStream.next(true);
       this.undoRedoService.enableWorkFlowModification();
@@ -620,11 +621,13 @@ export class WorkflowActionService {
    */
   public reloadWorkflow(
     workflow: Readonly<Workflow> | undefined,
-    asyncRendering = this.config.env.asyncRenderingEnabled
+    asyncRendering = this.config.env.asyncRenderingEnabled,
+    displayAsReadOnly = false
   ): void {
     this.jointGraphWrapper.setReloadingWorkflow(true);
     this.jointGraphWrapper.jointGraphContext.withContext({ async: asyncRendering }, () => {
       this.setWorkflowMetadata(workflow);
+      this.setWorkflowDisplayedAsReadonly(displayAsReadOnly);
       // remove the existing operators on the paper currently
 
       this.deleteOperatorsAndLinks(
@@ -729,6 +732,10 @@ export class WorkflowActionService {
     this.workflowSettings = newSettings;
   }
 
+  public setWorkflowDisplayedAsReadonly(workflowDisplayedAsReadonly: boolean): void {
+    this.workflowDisplayedAsReadonly = workflowDisplayedAsReadonly;
+  }
+
   public getWorkflowSettings(): WorkflowSettings {
     return this.workflowSettings;
   }
@@ -816,6 +823,7 @@ export class WorkflowActionService {
     this.destroySharedModel();
     this.setWorkflowMetadata(undefined);
     this.setWorkflowSettings(undefined);
+    this.setWorkflowDisplayedAsReadonly(false);
     this.reloadWorkflow(undefined);
     this.setHighlightingEnabled(false);
   }
