@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Injectable } from "@angular/core";
+import {Injectable} from "@angular/core";
 
 import * as joint from "jointjs";
 import { BehaviorSubject, merge, Observable, Subject } from "rxjs";
@@ -32,18 +32,19 @@ import {
   Point,
   PortDescription,
 } from "../../../types/workflow-common.interface";
-import { JointUIService } from "../../joint-ui/joint-ui.service";
-import { OperatorMetadataService } from "../../operator-metadata/operator-metadata.service";
-import { UndoRedoService } from "../../undo-redo/undo-redo.service";
-import { WorkflowUtilService } from "../util/workflow-util.service";
-import { JointGraphWrapper } from "./joint-graph-wrapper";
-import { SyncTexeraModel } from "./sync-texera-model";
-import { WorkflowGraph, WorkflowGraphReadonly } from "./workflow-graph";
-import { filter } from "rxjs/operators";
-import { isDefined } from "../../../../common/util/predicate";
-import { User } from "../../../../common/type/user";
-import { SharedModelChangeHandler } from "./shared-model-change-handler";
-import { GuiConfigService } from "../../../../common/service/gui-config.service";
+import {JointUIService} from "../../joint-ui/joint-ui.service";
+import {OperatorMetadataService} from "../../operator-metadata/operator-metadata.service";
+import {UndoRedoService} from "../../undo-redo/undo-redo.service";
+import {WorkflowUtilService} from "../util/workflow-util.service";
+import {JointGraphWrapper} from "./joint-graph-wrapper";
+import {SyncTexeraModel} from "./sync-texera-model";
+import {WorkflowGraph, WorkflowGraphReadonly} from "./workflow-graph";
+import {filter} from "rxjs/operators";
+import {isDefined} from "../../../../common/util/predicate";
+import {User} from "../../../../common/type/user";
+import {SharedModelChangeHandler} from "./shared-model-change-handler";
+import {GuiConfigService} from "../../../../common/service/gui-config.service";
+import {WorkflowDisplayMode} from "../../../../dashboard/type/workflow-display-mode";
 
 export const DEFAULT_WORKFLOW_NAME = "Untitled Workflow";
 export const DEFAULT_WORKFLOW = {
@@ -97,7 +98,7 @@ export class WorkflowActionService {
 
   private workflowSettings: WorkflowSettings;
   private workflowResetSubject = new Subject<void>();
-  private workflowDisplayedAsReadonly = false;
+  private workflowDisplayMode: WorkflowDisplayMode = WorkflowDisplayMode.REGULAR;
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
@@ -136,7 +137,7 @@ export class WorkflowActionService {
    * Workflow modification lock interface (allows or prevents commands that would modify the workflow graph).
    */
   public enableWorkflowModification() {
-    if (!this.workflowDisplayedAsReadonly && !this.workflowMetadata.readonly && !this.workflowModificationEnabled) {
+    if (this.workflowDisplayMode !== WorkflowDisplayMode.READONLY && !this.workflowMetadata.readonly && !this.workflowModificationEnabled) {
       this.workflowModificationEnabled = true;
       this.enableModificationStream.next(true);
       this.undoRedoService.enableWorkFlowModification();
@@ -621,13 +622,11 @@ export class WorkflowActionService {
    */
   public reloadWorkflow(
     workflow: Readonly<Workflow> | undefined,
-    asyncRendering = this.config.env.asyncRenderingEnabled,
-    displayAsReadOnly = false
+    asyncRendering = this.config.env.asyncRenderingEnabled
   ): void {
     this.jointGraphWrapper.setReloadingWorkflow(true);
     this.jointGraphWrapper.jointGraphContext.withContext({ async: asyncRendering }, () => {
       this.setWorkflowMetadata(workflow);
-      this.setWorkflowDisplayedAsReadonly(displayAsReadOnly);
       // remove the existing operators on the paper currently
 
       this.deleteOperatorsAndLinks(
@@ -732,8 +731,8 @@ export class WorkflowActionService {
     this.workflowSettings = newSettings;
   }
 
-  public setWorkflowDisplayedAsReadonly(workflowDisplayedAsReadonly: boolean): void {
-    this.workflowDisplayedAsReadonly = workflowDisplayedAsReadonly;
+  public setWorkflowDisplayMode(workflowDisplayMode: WorkflowDisplayMode): void {
+    this.workflowDisplayMode = workflowDisplayMode;
   }
 
   public getWorkflowSettings(): WorkflowSettings {
@@ -823,7 +822,7 @@ export class WorkflowActionService {
     this.destroySharedModel();
     this.setWorkflowMetadata(undefined);
     this.setWorkflowSettings(undefined);
-    this.setWorkflowDisplayedAsReadonly(false);
+    this.setWorkflowDisplayMode(WorkflowDisplayMode.REGULAR);
     this.reloadWorkflow(undefined);
     this.setHighlightingEnabled(false);
   }

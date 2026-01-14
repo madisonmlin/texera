@@ -44,6 +44,7 @@ import {CodeEditorService} from "../../../../../workspace/service/code-editor/co
 import {Workflow} from "../../../../../common/type/workflow";
 import {checkIfWorkflowBroken} from "../../../../../common/util/workflow-check";
 import {isDefined} from "../../../../../common/util/predicate";
+import {WorkflowDisplayMode} from "../../../../type/workflow-display-mode";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -138,8 +139,8 @@ export class ReadonlyEmbeddedWorkspaceComponent implements AfterViewInit, OnInit
           this.workflowActionService.setNewSharedModel(this.wid, this.userService.getCurrentUser());
 
           // load the fetched workflow
-          const displayAsReadonly = true;
-          this.workflowActionService.reloadWorkflow(workflow, undefined, displayAsReadonly);
+          this.workflowActionService.setWorkflowDisplayMode(WorkflowDisplayMode.READONLY);
+          this.workflowActionService.reloadWorkflow(workflow);
 
           // clear stack
           this.undoRedoService.clearUndoStack();

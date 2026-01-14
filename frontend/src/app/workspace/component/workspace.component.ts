@@ -42,6 +42,7 @@ import { WorkflowCompilingService } from "../service/compile-workflow/workflow-c
 import { DASHBOARD_USER_WORKSPACE } from "../../app-routing.constant";
 import { GuiConfigService } from "../../common/service/gui-config.service";
 import { checkIfWorkflowBroken } from "../../common/util/workflow-check";
+import {WorkflowDisplayMode} from "../../dashboard/type/workflow-display-mode";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -193,6 +194,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           // remember URL fragment
           const fragment = this.route.snapshot.fragment;
           // load the fetched workflow
+          this.workflowActionService.setWorkflowDisplayMode(WorkflowDisplayMode.REGULAR);
           this.workflowActionService.reloadWorkflow(workflow);
           this.workflowActionService.enableWorkflowModification();
           // set the URL fragment to previous value
