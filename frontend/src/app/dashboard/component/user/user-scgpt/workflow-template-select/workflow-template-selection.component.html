@@ -1,0 +1,24 @@
+<nz-form-item>
+  <nz-form-label [nzRequired]="props.required">
+    {{ props.label }}
+  </nz-form-label>
+
+  <nz-form-control>
+    <nz-select
+      [formControl]="formControl"
+      [formlyAttributes]="field"
+      [nzPlaceHolder]="props.placeholder || 'Select a template'">
+
+      <nz-option
+        *ngFor="let option of (templateOptions$ | async) ?? []"
+        [nzValue]="option.tid"
+        [nzLabel]="option.name">
+      </nz-option>
+
+    </nz-select>
+
+    <div class="form-description" *ngIf="props.description">
+      {{ props.description }}
+    </div>
+  </nz-form-control>
+</nz-form-item>

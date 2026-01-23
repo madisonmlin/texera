@@ -192,6 +192,9 @@ import { ScGPTJobCreationComponent } from "./dashboard/component/user/user-scgpt
 import {
   ReadonlyEmbeddedWorkspaceComponent
 } from "./dashboard/component/user/user-scgpt/readonly-embedded-workspace/readonly-embedded-workspace.component";
+import {
+  WorkflowTemplateSelectionComponent
+} from "./dashboard/component/user/user-scgpt/workflow-template-select/workflow-template-selection.component";
 
 registerLocaleData(en);
 
@@ -266,6 +269,7 @@ registerLocaleData(en);
     AgentChatComponent,
     AgentRegistrationComponent,
     InputAutoCompleteComponent,
+    WorkflowTemplateSelectionComponent,
     FileSelectionComponent,
     CollabWrapperComponent,
     AboutComponent,

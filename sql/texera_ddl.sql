@@ -55,6 +55,7 @@ DROP TABLE IF EXISTS "user" CASCADE;
 DROP TABLE IF EXISTS user_last_active_time CASCADE;
 DROP TABLE IF EXISTS workflow CASCADE;
 DROP TABLE IF EXISTS workflow_version CASCADE;
+DROP TABLE IF EXISTS workflow_templates CASCADE;
 DROP TABLE IF EXISTS project CASCADE;
 DROP TABLE IF EXISTS workflow_of_project CASCADE;
 DROP TABLE IF EXISTS workflow_executions CASCADE;
@@ -161,6 +162,15 @@ CREATE TABLE IF NOT EXISTS workflow_version
     content        TEXT NOT NULL,
     creation_time  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (wid) REFERENCES workflow(wid) ON DELETE CASCADE
+    );
+
+-- workflow_template
+CREATE TABLE IF NOT EXISTS workflow_templates
+(
+    tid 		SERIAL PRIMARY KEY,
+    name 		VARCHAR(128) NOT NULL,
+    description VARCHAR(500),
+    content 	TEXT NOT NULL
     );
 
 -- project

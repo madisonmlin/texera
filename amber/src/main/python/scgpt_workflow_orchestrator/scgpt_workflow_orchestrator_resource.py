@@ -23,6 +23,7 @@ with open(SCGPT_WORKFLOW_TEMPLATE_FILEPATH, "r", encoding="utf-8") as file:
     scgpt_workflow_template = json.load(file)
 
 class BuildParameters(BaseModel):
+    tid: int
     filepath: str
     token: str
 
@@ -57,7 +58,17 @@ def update_workflow_params(params: BuildParameters):
     operator_idx = 0
     param_name = "fileName"
     param_value = params.filepath
-    scgpt_workflow_template["operators"][operator_idx]["operatorProperties"][param_name] = param_value
+    workflow_template = json.loads(get_workflow_template(params.token, params.tid)["content"])
+    workflow_template["operators"][operator_idx]["operatorProperties"][param_name] = param_value
+
+def get_workflow_template(token: str, tid: int) -> str:
+    urlpath = f"http://localhost:8080/api/workflow-template/{tid}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    response = requests.get(urlpath, headers=headers)
+    return response.json()
 
 def create_scgpt_workflow(token: str) -> None:
     urlpath = "http://localhost:8080/api/workflow/create"

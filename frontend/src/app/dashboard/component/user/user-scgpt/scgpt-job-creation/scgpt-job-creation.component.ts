@@ -57,19 +57,30 @@ export class ScGPTJobCreationComponent implements OnInit {
 
   workflow: Workflow | undefined;
   model = {
-    filePath: "",
+    template: null,
+    filePath: null,
     // xAxis: "",
     // yAxis: "",
     // alpha: 1,
   };
   form = new FormGroup({
     // Initialize the FormControl for the path
+    template: new FormControl(this.model.template),
     filePath: new FormControl(this.model.filePath),
     // xAxis: new FormControl(this.model.xAxis),
     // yAxis: new FormControl(this.model.yAxis),
     // alpha: new FormControl(this.model.alpha),
   });
   fields: FormlyFieldConfig[] = [
+    {
+      key: "template",
+      type: "workflowtemplateselection",
+      props: {
+        label: "Template",
+        description: "Template to generate workflow from.",
+        required: true,
+      },
+    },
     {
       key: "filePath",
       type: "inputautocomplete",
@@ -78,6 +89,9 @@ export class ScGPTJobCreationComponent implements OnInit {
         description: "File containing data to plot.",
         required: true,
       },
+      expressions: {
+        hide: field => field.model?.template === null
+      }
     },
     // {
     //   key: "xAxis",
@@ -137,6 +151,7 @@ export class ScGPTJobCreationComponent implements OnInit {
     const urlPath = "http://127.0.0.1:8019/build-scgpt";
     const token = localStorage.getItem(TOKEN_KEY) ?? "";
     const requestBody = {
+      tid: this.model.template,
       filepath: this.model.filePath,
       token: token
     }
