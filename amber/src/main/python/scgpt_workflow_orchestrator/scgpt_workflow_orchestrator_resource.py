@@ -48,18 +48,20 @@ async def run_scGPT(params: RunParameters):
 
 @app.post("/build-scgpt")
 def build_scGPT(params: BuildParameters):
-    update_workflow_params(params)
-    dashboard_workflow = create_scgpt_workflow(params.token)
+    workflow_template = update_workflow_params(params)
+    dashboard_workflow = create_scgpt_workflow(params.token, workflow_template)
     print(f"DASHBOARD WORKFLOW:\n{dashboard_workflow}")
     wid = dashboard_workflow["workflow"]["wid"]
+    set_workflow_access(params.token, wid, "READ")
     return {"wid": wid}
 
-def update_workflow_params(params: BuildParameters):
+def update_workflow_params(params: BuildParameters) -> dict:
     operator_idx = 0
     param_name = "fileName"
     param_value = params.filepath
     workflow_template = json.loads(get_workflow_template(params.token, params.tid)["content"])
     workflow_template["operators"][operator_idx]["operatorProperties"][param_name] = param_value
+    return workflow_template
 
 def get_workflow_template(token: str, tid: int) -> str:
     urlpath = f"http://localhost:8080/api/workflow-template/{tid}"
@@ -70,13 +72,13 @@ def get_workflow_template(token: str, tid: int) -> str:
     response = requests.get(urlpath, headers=headers)
     return response.json()
 
-def create_scgpt_workflow(token: str) -> None:
+def create_scgpt_workflow(token: str, workflow_template) -> None:
     urlpath = "http://localhost:8080/api/workflow/create"
     request_body = {
         "wid": None,
         "name": "scgpt_template",
         "description": "",
-        "content": json.dumps(scgpt_workflow_template),
+        "content": json.dumps(workflow_template),
         "creationTime": None,
         "lastModifiedTime": None,
         "isPublic": False
@@ -96,6 +98,14 @@ def retrieve_scgpt_workflow(token: str, wid: int):
     }
     response = requests.get(urlpath, headers=headers)
     return response.json()
+
+def set_workflow_access(token: str, wid: int, privilege: str) -> None:
+    urlpath = f"http://localhost:8080/api/access/workflow/update-self/{wid}/{privilege}"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    requests.put(urlpath, headers=headers)
 
 def create_scgpt_computing_unit(token: str):
     urlpath = "http://localhost:8888/api/computing-unit/create"
