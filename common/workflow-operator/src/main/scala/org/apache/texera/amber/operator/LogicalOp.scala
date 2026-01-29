@@ -140,6 +140,7 @@ import org.apache.texera.amber.operator.visualization.wordCloud.WordCloudOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.texera.amber.operator.sklearn.testing.SklearnTestingOpDesc
 import org.apache.texera.amber.operator.visualization.stripChart.StripChartOpDesc
+import org.apache.texera.amber.operator.source.parameter.ParameterSourceOpDesc
 
 import java.util.UUID
 import scala.util.Try
@@ -159,6 +160,7 @@ trait StateTransferFunc
     new Type(value = classOf[SankeyDiagramOpDesc], name = "SankeyDiagram"),
     new Type(value = classOf[IcicleChartOpDesc], name = "IcicleChart"),
     new Type(value = classOf[CSVScanSourceOpDesc], name = "CSVFileScan"),
+    new Type(value = classOf[ParameterSourceOpDesc], name = "FileParameter"),
     // disabled the ParallelCSVScanSourceOpDesc so that it does not confuse user. it can be re-enabled when doing experiments.
     // new Type(value = classOf[ParallelCSVScanSourceOpDesc], name = "ParallelCSVFileScan"),
     new Type(value = classOf[JSONLScanSourceOpDesc], name = "JSONLFileScan"),
