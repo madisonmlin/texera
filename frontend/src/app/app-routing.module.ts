@@ -44,9 +44,6 @@ import { HubSearchResultComponent } from "./hub/component/hub-search-result/hub-
 import { AdminSettingsComponent } from "./dashboard/component/admin/settings/admin-settings.component";
 import { GuiConfigService } from "./common/service/gui-config.service";
 import { ScGPTJobCreationComponent } from "./dashboard/component/user/user-scgpt/scgpt-job-creation/scgpt-job-creation.component";
-import {
-  ReadonlyEmbeddedWorkspaceComponent
-} from "./dashboard/component/user/user-scgpt/readonly-embedded-workspace/readonly-embedded-workspace.component";
 
 const rootRedirectGuard: CanActivateFn = () => {
   const config = inject(GuiConfigService);
@@ -156,10 +153,6 @@ routes.push({
           path: "scgpt/:jid",
           component: ScGPTJobCreationComponent,
         },
-        {
-          path: "scgpt/:jid/workspace",
-          component: ReadonlyEmbeddedWorkspaceComponent,
-        }
       ],
     },
     {
