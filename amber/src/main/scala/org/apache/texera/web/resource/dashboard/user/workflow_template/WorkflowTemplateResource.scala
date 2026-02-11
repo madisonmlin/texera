@@ -15,6 +15,7 @@ import scala.jdk.CollectionConverters._
 import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource._
 
 import javax.annotation.security.RolesAllowed
+import org.apache.texera.web.service.{WorkflowTemplate, WorkflowTemplateService}
 
 object WorkflowTemplateResource {
   final private lazy val context = SqlServer
@@ -38,11 +39,13 @@ object WorkflowTemplateResource {
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/workflow-template")
 class WorkflowTemplateResource extends LazyLogging {
+  val workflowTemplateService = new WorkflowTemplateService(context);
 
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/add")
   def addWorkflowTemplate(workflow_template: WorkflowTemplates, @Auth sessionUser: SessionUser): Unit = {
+    workflow_template.setTid(null)
     workflowTemplatesDao.insert(workflow_template)
   }
 
@@ -65,20 +68,7 @@ class WorkflowTemplateResource extends LazyLogging {
   @GET
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/{tid}")
-  def retrieveWorkflowTemplate(@PathParam("tid") tid: Integer, @Auth sessionUser: SessionUser): Map[String, Any] = {
-    val record = context
-      .selectFrom(WORKFLOW_TEMPLATES)
-      .where(WORKFLOW_TEMPLATES.TID.eq(tid))
-      .fetchOne()
-
-    if (record == null)
-      throw new NotFoundException(s"Template $tid not found")
-
-    Map(
-      "tid" -> record.getTid,
-      "name" -> record.getName,
-      "description" -> record.getDescription,
-      "content" -> record.getContent
-    )
+  def retrieveWorkflowTemplate(@PathParam("tid") tid: Integer, @Auth sessionUser: SessionUser): WorkflowTemplate = {
+    this.workflowTemplateService.retrieveWorkflowTemplate(tid);
   }
 }

@@ -1,4 +1,4 @@
-export interface WorkflowTemplateContent
+export interface WorkflowTemplate
   extends Readonly<{
     tid: number,
     name: string;

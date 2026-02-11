@@ -29,18 +29,14 @@ import org.apache.texera.auth.SessionUser
 import org.apache.texera.dao.SqlServer
 import org.apache.texera.dao.jooq.generated.Tables._
 import org.apache.texera.dao.jooq.generated.enums.PrivilegeEnum
-import org.apache.texera.dao.jooq.generated.tables.daos.{
-  WorkflowDao,
-  WorkflowOfProjectDao,
-  WorkflowOfUserDao,
-  WorkflowUserAccessDao
-}
+import org.apache.texera.dao.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao}
 import org.apache.texera.dao.jooq.generated.tables.pojos._
 import org.apache.texera.service.util.LargeBinaryManager
 import org.apache.texera.web.resource.dashboard.hub.EntityType
 import org.apache.texera.web.resource.dashboard.hub.HubResource.recordCloneAction
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource._
+import org.apache.texera.web.service.WorkflowCreationService
 import org.jooq.impl.DSL.{groupConcatDistinct, noCondition}
 import org.jooq.{Condition, DSLContext, Record9, Result, SelectOnConditionStep}
 
@@ -260,6 +256,7 @@ object WorkflowResource {
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/workflow")
 class WorkflowResource extends LazyLogging {
+  val workflowCreationService = new WorkflowCreationService(context);
 
   /**
     * This method returns all workflow IDs that the user has access to
@@ -566,22 +563,7 @@ class WorkflowResource extends LazyLogging {
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/create")
   def createWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): DashboardWorkflow = {
-    val user = sessionUser.getUser
-    if (workflow.getWid != null) {
-      throw new BadRequestException("Cannot create a new workflow with a provided id.")
-    } else {
-      insertWorkflow(workflow, user)
-      WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = true)
-      DashboardWorkflow(
-        isOwner = true,
-        PrivilegeEnum.WRITE.toString,
-        user.getName,
-        workflowDao.fetchOneByWid(workflow.getWid),
-        List[Integer](),
-        user.getUid
-      )
-    }
-
+    this.workflowCreationService.createWorkflow(workflow, sessionUser);
   }
 
   /**
