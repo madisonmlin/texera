@@ -4,4 +4,5 @@ export interface WorkflowTemplate
     name: string;
     description: string;
     content: string;
+    configurableParameters: string;
   }> {}

@@ -19,7 +19,7 @@ export class WorkflowTemplateService {
     });
   }
 
-  getWorkflowTemplates(): Observable<{ tid: string, name: string }[]> {
+  getWorkflowTemplate(): Observable<{ tid: string, name: string }[]> {
     return this.http.get<{ tid: string, name: string }[]>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_TEMPLATE_BASE_URL}/list`);
   }
 }

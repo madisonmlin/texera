@@ -3,6 +3,7 @@ import { FieldType, FieldTypeConfig } from "@ngx-formly/core";
 import {Observable} from "rxjs";
 import {WorkflowTemplateService} from "../../../../service/user/workflow-template/workflow-template.service";
 import {UntilDestroy} from "@ngneat/until-destroy";
+import {WorkflowTemplate} from "../../../../type/workflow-template";
 
 @UntilDestroy()
 @Component({
@@ -18,7 +19,7 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
   }
 
   ngOnInit() {
-    // const newTemplate: WorkflowTemplateContent = {
+    // const newTemplate: WorkflowTemplate = {
     //   tid: 0,
     //   name: "CSV Workflow",
     //   description: "Workflow with single CSV operator",
@@ -31,7 +32,7 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
     //           fileEncoding: "UTF_8",
     //           customDelimiter: ",",
     //           hasHeader: true,
-    //           fileName: "/texera/camelia/v1/diabetes.csv",
+    //           fileName: null,
     //         },
     //         inputPorts: [],
     //         outputPorts: [{ portID: "output-0" }],
@@ -58,11 +59,15 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
     //     commentBoxes: [],
     //     settings: { dataTransferBatchSize: 400 },
     //   }),
+    //   configurableParameters: JSON.stringify({
+    //     "CSVFileScan-operator": ["fileName"],
+    //     "Limit-operator": ["limit"],
+    //   })
     // };
     //
     // this.templateService.addWorkflowTemplate(newTemplate);
 
-    this.templateOptions$ = this.templateService.getWorkflowTemplates();
+    this.templateOptions$ = this.templateService.getWorkflowTemplate();
     this.props.options = this.templateOptions$;
   }
 }

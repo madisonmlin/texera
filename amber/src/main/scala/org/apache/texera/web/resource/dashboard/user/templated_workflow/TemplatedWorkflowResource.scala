@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.dropwizard.auth.Auth
 import org.apache.texera.auth.SessionUser
 import org.apache.texera.dao.SqlServer
-import org.apache.texera.dao.jooq.generated.tables.daos.WorkflowToTemplateDao
+import org.apache.texera.dao.jooq.generated.tables.daos.WorkflowOfTemplateDao
 
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.MediaType
@@ -24,7 +24,7 @@ object TemplatedWorkflowResource {
   final private lazy val context = SqlServer
     .getInstance()
     .createDSLContext()
-  final private lazy val workflowToTemplateDao = new WorkflowToTemplateDao(
+  final private lazy val workflowOfTemplateDao = new WorkflowOfTemplateDao(
     context.configuration
   )
 
@@ -54,8 +54,8 @@ object TemplatedWorkflowResource {
     mapper.writeValueAsString(root)
   }
 
-  private def buildTemplatedWorkflowRelation(tid: Integer, wid: Integer): Unit = {
-    workflowToTemplateDao.insert(new WorkflowToTemplate(tid, wid))
+  private def buildTemplatedWorkflowRelation(tid: Integer, wid: Integer, parameters: String): Unit = {
+    workflowOfTemplateDao.insert(new WorkflowOfTemplate(tid, wid, parameters))
   }
 }
 
@@ -88,8 +88,10 @@ class TemplatedWorkflowResource extends LazyLogging{
       false                                // isPublic
     )
     val workflow = workflowCreationService.createWorkflow(workflow_template, user);
-    val wid = workflow.workflow.getWid
-    buildTemplatedWorkflowRelation(tid, wid);
+    val wid = workflow.workflow.getWid;
+    val mapper = new ObjectMapper().registerModule(DefaultScalaModule);
+    val parameters = mapper.writeValueAsString(request.parameters);
+    buildTemplatedWorkflowRelation(tid, wid, parameters);
     wid;
   }
 }
