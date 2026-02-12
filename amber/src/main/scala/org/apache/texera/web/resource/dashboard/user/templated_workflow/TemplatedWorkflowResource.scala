@@ -12,6 +12,13 @@ import javax.ws.rs.{POST, Path, Produces, QueryParam}
 import org.apache.texera.web.service.{WorkflowCreationService, WorkflowTemplateService}
 import org.apache.texera.dao.jooq.generated.tables.pojos._
 import org.apache.texera.web.resource.dashboard.user.templated_workflow.TemplatedWorkflowResource._
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.databind.node.ObjectNode
+
+case class BuildTemplatedWorkflowRequest(
+                                          parameters: Map[String, Map[String, Any]]
+                                        )
 
 object TemplatedWorkflowResource {
   final private lazy val context = SqlServer
@@ -20,6 +27,32 @@ object TemplatedWorkflowResource {
   final private lazy val workflowToTemplateDao = new WorkflowToTemplateDao(
     context.configuration
   )
+
+  private val mapper = new ObjectMapper().registerModule(DefaultScalaModule)
+
+  private def applyParameters(
+                               content: String,
+                               params: Map[String, Map[String, Any]]
+                             ): String = {
+
+    val root = mapper.readTree(content)
+
+    val operators = root.get("operators")
+
+    operators.forEach { op =>
+      val opId = op.get("operatorID").asText()
+      print(opId);
+
+      params.get(opId).foreach { paramMap =>
+        val props = op.get("operatorProperties").asInstanceOf[ObjectNode]
+
+        paramMap.foreach { case (key, value) =>
+          props.putPOJO(key, value)
+        }
+      }
+    }
+    mapper.writeValueAsString(root)
+  }
 
   private def buildTemplatedWorkflowRelation(tid: Integer, wid: Integer): Unit = {
     workflowToTemplateDao.insert(new WorkflowToTemplate(tid, wid))
@@ -39,13 +72,17 @@ class TemplatedWorkflowResource extends LazyLogging{
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/build")
-  def buildTemplatedWorkflow(@QueryParam("tid")tid: Integer, @Auth user: SessionUser): Integer = {
+  def buildTemplatedWorkflow(
+                              @QueryParam("tid")tid: Integer,
+                              request: BuildTemplatedWorkflowRequest,
+                              @Auth user: SessionUser): Integer = {
     val template = workflowTemplateService.retrieveWorkflowTemplate(tid);
+    val content = applyParameters(template.content, request.parameters);
     val workflow_template = new Workflow(
       null,                                // wid
-      "scgpt_template",                    // name
+      "scgpt_workflow",                    // name
       "",                                  // description
-      template.content,                    // content
+      content,                             // content
       null,                                // creationTime
       null,                                // lastModifiedTime
       false                                // isPublic

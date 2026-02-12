@@ -40,9 +40,10 @@ import {HttpClient} from "@angular/common/http";
 import {TOKEN_KEY} from "../../../../../common/service/user/auth.service";
 import {ShareAccessService} from "../../../../service/user/share-access/share-access.service";
 import {isEqual} from "lodash-es";
-import {map, Observable} from "rxjs";
+import {map, Observable, of, tap} from "rxjs";
 import {cloneDeep} from "lodash";
 import {WorkflowTemplate} from "../../../../type/workflow-template";
+import {switchMap} from "rxjs/operators";
 
 @UntilDestroy()
 @Component({
@@ -58,7 +59,7 @@ export class ScGPTJobCreationComponent implements OnInit {
   public operatorIndexToForm: Record<string, any>[] = [];
   public isLogin: boolean = this.userService.isLogin();
   public currentUid: number | undefined;
-  private workflowInitialized: boolean = false;
+  public workflowInitialized: boolean = false;
   public populated: boolean = false;
 
   public configurableProperties: Set<string> = new Set(["fileName", "fileEncoding"])
@@ -149,29 +150,31 @@ export class ScGPTJobCreationComponent implements OnInit {
     }
 
     if (!this.workflowInitialized) {
-      this.createTemplatedWorkflow().pipe(untilDestroyed(this)).subscribe(
-        (wid) => {
-          this.setWorkflowAccess(wid, "READ").pipe(untilDestroyed(this)).subscribe(() => {
-            this.workflowPersistService
-              .retrieveWorkflow(wid)
-              .pipe(untilDestroyed(this))
-              .subscribe(
-                (workflow: Workflow) => {
-                  this.workflowActionService.reloadWorkflow(workflow);
-                  this.wid = wid;
-                  this.workflowInitialized = true;
-                  this.updateOperator();
-                })
-          });
-        }
-      );
+      this.createTemplatedWorkflow().pipe(
+        switchMap((wid) => {
+          this.wid = wid;
+          return this.setWorkflowAccess(wid, "READ");
+        }),
+        tap(() => {
+          this.workflowInitialized = true;
+        }),
+        untilDestroyed(this)
+      ).subscribe();
+
     } else {
-      this.updateOperator();
+      this.updateOperator().pipe(untilDestroyed(this)).subscribe();
     }
   }
 
   private createTemplatedWorkflow(): Observable<number> {
-    return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {})
+    const parameters = {
+      "CSVFileScan-operator": {
+        "fileName": this.model.filePath
+      }
+    };
+    return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {
+      parameters: parameters
+    })
   }
 
   // move to workflow-template.service.ts
@@ -188,19 +191,20 @@ export class ScGPTJobCreationComponent implements OnInit {
     return this.http.put<void>(`${AppSettings.getApiEndpoint()}/access/workflow/update-self/${wid}/${accessType}`, null)
   }
 
-  private updateOperator(): void {
+  private updateOperator(): Observable<Workflow> {
     this.updateOperatorForms();
     if (this.workflowChanged()) {
       this.updateOperatorProperties();
       const workflow = this.workflowActionService.getWorkflow();
-      this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe(
-        () => {
-          this.notificationService.success("Workflow updated.");
+      return this.workflowPersistService.persistWorkflow(workflow).pipe(
+        tap(() => {
           this.populated = true;
-        }
+          this.notificationService.success("Workflow updated.");
+        })
       );
     } else {
       this.notificationService.info("No changes made to the workflow.")
+      return of(this.workflowActionService.getWorkflow());
     }
   }
 
