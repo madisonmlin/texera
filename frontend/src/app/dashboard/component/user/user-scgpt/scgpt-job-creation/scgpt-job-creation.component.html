@@ -16,7 +16,7 @@
  specific language governing permissions and limitations
  under the License.
 -->
-<h2 class="job-title">Create scGPT Job:</h2>
+<h2 class="job-title">Create Job:</h2>
 <form [formGroup]="form">
   <formly-form
     [model]="model"
@@ -25,27 +25,20 @@
   </formly-form>
 </form>
 
+<!--<texera-formly-form-frame *ngIf="wid" [currentOperatorId]="'CSVFileScan-operator'" [configurableProperties]="configurableProperties"></texera-formly-form-frame>-->
+
 <button
   nz-button
   nzType="primary"
   [disabled]="!form.valid"
-  (click)="validateScGPTJobForm()">
+  (click)="onJobFormValidated()">
   VALIDATE
 </button>
 
-<button
-  *ngIf="showDownloadButton"
-  class="result-download-link"
-  nz-button
-  nzType="primary"
-  (click)="onClickDownloadFinalResult()">
-  Download Result
-</button>
-
-<div class="readonly-embedded-workspace-container" *ngIf="wid">
+<div class="readonly-embedded-workspace-container" *ngIf="wid" [hidden]="!populated">
   <div class="inner-scale">
-    <texera-readonly-embedded-workspace [wid]="wid">
-    </texera-readonly-embedded-workspace>
+    <texera-workspace [wid]="wid">
+    </texera-workspace>
   </div>
 </div>
 
