@@ -22,24 +22,35 @@ package org.apache.texera.amber.operator.source.parameter
 import org.apache.texera.amber.core.executor.SourceOperatorExecutor
 import org.apache.texera.amber.core.tuple.TupleLike
 import org.apache.texera.amber.util.JSONUtils.objectMapper
-
+import scala.jdk.CollectionConverters._
 import scala.collection.immutable.ArraySeq
 
-class ParameterSourceOpExec private[parameter](descString: String) extends SourceOperatorExecutor {
-  val desc: ParameterSourceOpDesc = objectMapper.readValue(descString, classOf[ParameterSourceOpDesc])
+class ParameterSourceOpExec private[parameter] (descString: String) extends SourceOperatorExecutor {
+  val desc: ParameterSourceOpDesc =
+    objectMapper.readValue(descString, classOf[ParameterSourceOpDesc])
 
   private var emitted = false
 
   override def produceTuple(): Iterator[TupleLike] = {
-    if (emitted) {
-      Iterator.empty
-    } else {
+    if (emitted) Iterator.empty
+    else {
       emitted = true
-      Iterator.single(
-        TupleLike(
-          ArraySeq(desc.fileName.get): _*
-        )
-      )
+
+      val fileRows =
+        desc.filePairs.asScala.iterator.map { p =>
+          val k = Option(p.fileKey).getOrElse("")
+          val v = p.fileName.map(_.toString).getOrElse("")
+          TupleLike(ArraySeq(k, v): _*)
+        }
+
+      val kvRows =
+        desc.pairs.asScala.iterator.map { p =>
+          val k = Option(p.key).getOrElse("")
+          val v = Option(p.value).getOrElse("")
+          TupleLike(ArraySeq(k, v): _*)
+        }
+
+      fileRows ++ kvRows
     }
   }
 }

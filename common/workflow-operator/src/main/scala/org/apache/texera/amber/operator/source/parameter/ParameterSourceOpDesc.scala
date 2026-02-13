@@ -19,17 +19,68 @@
 
 package org.apache.texera.amber.operator.source.parameter
 
+import com.fasterxml.jackson.annotation.{
+  JsonCreator,
+  JsonIgnoreProperties,
+  JsonProperty,
+  JsonPropertyDescription
+}
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import org.apache.texera.amber.core.executor.OpExecWithClassName
 import org.apache.texera.amber.core.tuple.{AttributeType, Schema}
 import org.apache.texera.amber.core.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
-import org.apache.texera.amber.core.workflow.{PhysicalOp, SchemaPropagationFunc}
-import org.apache.texera.amber.operator.source.scan.ScanSourceOpDesc
+import org.apache.texera.amber.core.workflow.{OutputPort, PhysicalOp, SchemaPropagationFunc}
+import org.apache.texera.amber.operator.metadata.{OperatorGroupConstants, OperatorInfo}
+import org.apache.texera.amber.operator.source.SourceOperatorDescriptor
 import org.apache.texera.amber.util.JSONUtils.objectMapper
+
 import java.io.IOException
+import java.net.URI
 
-class ParameterSourceOpDesc extends ScanSourceOpDesc {
+object ParameterSourceOpDesc {
 
-  fileTypeName = Option("Parameter")
+  // File key/value pairs
+  class FileKeyValuePair @JsonCreator() (
+      @JsonProperty(value = "fileKey", required = true)
+      @JsonSchemaTitle("File Key")
+      var fileKey: String,
+      @JsonProperty(required = true)
+      @JsonSchemaTitle("File")
+      @JsonDeserialize(contentAs = classOf[java.lang.String])
+      var fileName: Option[String] = None
+  )
+
+  // Regular string key/value pairs
+  class KeyValuePair @JsonCreator() (
+      @JsonProperty(value = "key", required = true) var key: String,
+      @JsonProperty(value = "value", required = true) var value: String
+  )
+}
+
+@JsonIgnoreProperties(Array("fileEncoding", "fileTypeName", "Limit", "Offset"))
+class ParameterSourceOpDesc extends SourceOperatorDescriptor {
+
+  import org.apache.texera.amber.operator.source.parameter.ParameterSourceOpDesc._
+
+  @JsonProperty(value = "filePairs", required = false)
+  @JsonPropertyDescription("Multiple file key/value pairs")
+  var filePairs: java.util.List[FileKeyValuePair] = new java.util.ArrayList[FileKeyValuePair]()
+
+  @JsonProperty(value = "pairs", required = false)
+  @JsonPropertyDescription("Multiple string key/value pairs")
+  var pairs: java.util.List[KeyValuePair] = new java.util.ArrayList[KeyValuePair]()
+
+  override def operatorInfo: OperatorInfo = {
+    OperatorInfo(
+      "Parameter",
+      "Passes key/value pairs as a string",
+      OperatorGroupConstants.INPUT_GROUP,
+      List.empty,
+      List(OutputPort()),
+      supportReconfiguration = true
+    )
+  }
 
   @throws[IOException]
   override def getPhysicalOp(
@@ -54,8 +105,13 @@ class ParameterSourceOpDesc extends ScanSourceOpDesc {
       )
   }
 
-  override def sourceSchema(): Schema = {
-    Schema().add("FileName", AttributeType.STRING);
+  def setResolvedFileName(uri: URI): Unit = {
+    // nothing
   }
 
+  override def sourceSchema(): Schema = {
+    Schema()
+      .add("key", AttributeType.STRING)
+      .add("value", AttributeType.STRING)
+  }
 }
