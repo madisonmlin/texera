@@ -25,7 +25,7 @@ import {
   OnDestroy,
   Type,
   ViewChild,
-  HostListener,
+  HostListener, Input,
 } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { WorkflowActionService } from "../../service/workflow-graph/model/workflow-action.service";
