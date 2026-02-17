@@ -211,7 +211,8 @@ export class ScGPTJobCreationComponent implements OnInit {
 
   // move to workflow-access.service.ts
   private setWorkflowAccess(wid: number, accessType: string): Observable<void> {
-    return this.http.put<void>(`${AppSettings.getApiEndpoint()}/access/workflow/update-self/${wid}/${accessType}`, null)
+    const userEmail = this.userService.getCurrentUser()?.email
+    return this.http.put<void>(`${AppSettings.getApiEndpoint()}/access/workflow/grant/${wid}/${userEmail}/${accessType}`, null)
   }
 
   private updateOperator(): Observable<Workflow> {
