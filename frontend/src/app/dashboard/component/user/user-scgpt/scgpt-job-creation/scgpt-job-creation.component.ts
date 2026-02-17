@@ -61,17 +61,18 @@ export class ScGPTJobCreationComponent implements OnInit {
   public currentUid: number | undefined;
   public workflowInitialized: boolean = false;
   public populated: boolean = false;
-
-  public configurableProperties: Set<string> = new Set(["fileName", "fileEncoding"])
+  public configurableProperties: string | undefined;
 
   workflow: Workflow | undefined;
   model = {
     template: null,
     filePath: null,
+    nHVG: null,
   };
   form = new FormGroup({
     template: new FormControl(this.model.template),
     filePath: new FormControl(this.model.filePath),
+    nHVG: new FormControl(this.model.nHVG),
   });
   fields: FormlyFieldConfig[] = [
     {
@@ -100,9 +101,23 @@ export class ScGPTJobCreationComponent implements OnInit {
       key: "filePath",
       type: "inputautocomplete",
       props: {
-        label: "Dataset File",
-        description: "File containing data to plot.",
+        label: "Dataset File (.h5ad)",
+        // description: "File containing data to plot.",
         required: true,
+      },
+      expressions: {
+        hide: field => field.model?.template === null
+      }
+    },
+    {
+      key: "nHVG",
+      type: "input",
+      props: {
+        type: "number",
+        label: "Number of Highly Variable Genes",
+        required: true,
+        min: 1,
+        step: 1
       },
       expressions: {
         hide: field => field.model?.template === null
@@ -162,16 +177,24 @@ export class ScGPTJobCreationComponent implements OnInit {
       ).subscribe();
 
     } else {
-      this.updateOperator().pipe(untilDestroyed(this)).subscribe();
+      // this.updateOperator().pipe(untilDestroyed(this)).subscribe();
     }
   }
 
   private createTemplatedWorkflow(): Observable<number> {
+    // const parameters = {
+    //   "CSVFileScan-operator": {
+    //     "fileName": this.model.filePath
+    //   },
+    //   "Limit-operator": {
+    //     "limit": this.model.nHVG
+    //   }
+    // };
     const parameters = {
-      "CSVFileScan-operator": {
-        "fileName": this.model.filePath
+      "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": {
+        "textInput": `file_path=${this.model.filePath}\nn_hvg=${this.model.nHVG}`
       }
-    };
+    }
     return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {
       parameters: parameters
     })
@@ -210,15 +233,18 @@ export class ScGPTJobCreationComponent implements OnInit {
 
   private updateOperatorForms(): void {
     this.operatorIndexToForm[0]["fileName"] = this.model.filePath;
+    this.operatorIndexToForm[1]["limit"] = this.model.nHVG;
   }
 
   private updateOperatorProperties(): void {
     this.workflowActionService.setOperatorProperty(this.operatorIndexToId[0], this.operatorIndexToForm[0])
+    this.workflowActionService.setOperatorProperty(this.operatorIndexToId[1], this.operatorIndexToForm[1])
   }
 
   private workflowChanged(): boolean {
-    const operator = this.workflowActionService.getTexeraGraph().getOperator(this.operatorIndexToId[0]);
-    return !isEqual(this.operatorIndexToForm[0], operator.operatorProperties);
+    const operator0 = this.workflowActionService.getTexeraGraph().getOperator(this.operatorIndexToId[0]);
+    const operator1 = this.workflowActionService.getTexeraGraph().getOperator(this.operatorIndexToId[1]);
+    return !isEqual(this.operatorIndexToForm[0], operator0.operatorProperties) || !isEqual(this.operatorIndexToForm[1], operator1.operatorProperties);
   }
 
   ngOnInit(): void {

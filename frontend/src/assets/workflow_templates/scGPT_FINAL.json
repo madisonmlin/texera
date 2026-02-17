@@ -1,0 +1,675 @@
+{
+  "operators": [
+    {
+      "operatorID": "PythonUDFV2-operator-45227d1f-da41-471e-adb8-6a9455f49b89",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "from pytexera import *\nfrom utils import *\nimport scanpy as sc\nimport os \nimport tempfile\n\nclass ProcessTableOperator(UDFTableOperator):\n\n    @overrides\n    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n         for _, row in table.iterrows():\n            input_dataset_directory = row[\"input_dataset\"]\n\n            # Reload and print contents\n            reloaded = sc.read_h5ad(input_dataset_directory)\n            for idx, obs_row in reloaded.obs.iterrows():\n                yield obs_row.to_dict()   # yield back to Texera\n\n\n\n\n\n# from pytexera import *\n# from utils import *\n# import scanpy as sc\n# import os \n# import tempfile\n\n\n# class ProcessTableOperator(UDFTableOperator):\n\n#     @overrides\n#     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n#          for _, row in table.iterrows():\n#             input_dataset_directory = row[\"input_dataset\"]\n\n#             reloaded = sc.read_h5ad(input_dataset_directory)\n#             for idx, obs_row in reloaded.obs.iterrows():\n#                 yield obs_row.to_dict()   \n",
+        "workers": 1,
+        "retainInputColumns": false,
+        "outputColumns": [
+          {
+            "attributeName": "nCount_RNA",
+            "attributeType": "double"
+          },
+          {
+            "attributeName": "nFeature_RNA",
+            "attributeType": "integer"
+          },
+          {
+            "attributeName": "pANN",
+            "attributeType": "double"
+          },
+          {
+            "attributeName": "percent.mt",
+            "attributeType": "double"
+          },
+          {
+            "attributeName": "sampleid",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "donor",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "race",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "gender",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "age",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "tissue",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "majorclass",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "celltype",
+            "attributeType": "string"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Preprocessing Results",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true
+    },
+    {
+      "operatorID": "PythonUDFV2-operator-c3b95588-b579-4a50-adab-bb5099d724a3",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "# from pytexera import *\n# from utils import *\n# import scanpy as sc\n# import anndata as ad\n# import pandas as pd\n# import tempfile\n\n# class ProcessTableOperator(UDFTableOperator):\n#     @staticmethod\n#     def h5ad2addmetadata(indata, metadata):\n#             common=indata.obs.index.intersection(metadata.index)\n#             if len(common)<len(indata.obs.index):\n#                 print(f\"Warning: some cells are discarded due to not in metadata {len(common)} < {len(indata.obs.index)}.\")\n#             if len(common)==0:\n#                 print(\"Warning: empty cell barcode in metadata.\")\n#                 return indata\n#             indata=indata[common].copy()\n#             metadata=metadata.loc[common]\n#             header=metadata.columns.tolist()\n#             for h in header:\n#                 indata.obs[h]=metadata[h].tolist()\n#             return indata\n\n\n#     @overrides\n#     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n#         join_out = tempfile.mkdtemp(prefix=\"joinOut_\")\n\n#         for _, row in table.iterrows():\n#             metafile = Path(row[\"predictions_file\"])\n\n#         #infile = DatasetFileDocument(\"/sarah_asad@live.com/scgpt-data-100/v2 - 2/downsized_file_100.h5ad\")\n#         infile = DatasetFileDocument(\"/texera-admin/scgpt-safe/v1 - 1/downsized_safe.h5ad\")\n    \n#         bytes_io = infile.read_file()  \n\n#         # 0. Read .h5ad\n#         indata=sc.read_h5ad(bytes_io)\n\n#         # 2. Add nulcear fraction\n#         metadata=pd.read_csv(metafile, header=0, index_col=0)\n#         indata=ProcessTableOperator.h5ad2addmetadata(indata, metadata)\n\n#         outfile = os.path.join(join_out, \"EVAL_snRNA_meta.h5ad.h5ad\")\n#         sc.write(filename=outfile, adata=indata)\n\n#         join_out = Path(join_out) \n#         yield {\"meta_file\": str(join_out / \"EVAL_snRNA_meta.h5ad.h5ad\")}\n\n\n\n\n\n\n\n\n\n\nfrom pytexera import *\nfrom utils import *\nimport scanpy as sc\nimport anndata as ad\nimport pandas as pd\nimport tempfile\nfrom pathlib import Path\n\nclass ProcessTableOperator(UDFTableOperator):\n\n    @overrides\n    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n        join_out = tempfile.mkdtemp(prefix=\"joinOut_\")\n\n        for _, row in table.iterrows():\n            metafile = Path(row[\"predictions_file\"])\n\n        # Read input .h5ad file\n        infile = DatasetFileDocument(\"/texera-admin/scgpt-safe/v1 - 1/downsized_safe.h5ad\")\n        bytes_io = infile.read_file()\n        indata = sc.read_h5ad(bytes_io)\n\n        # Read metadata CSV\n        metadata = pd.read_csv(metafile, header=0, index_col=0)\n\n        # Merge metadata into .obs\n        common = indata.obs.index.intersection(metadata.index)\n        if len(common) < len(indata.obs.index):\n            print(f\"Warning: some cells are discarded due to not in metadata {len(common)} < {len(indata.obs.index)}.\")\n        if len(common) == 0:\n            print(\"Warning: empty cell barcode in metadata.\")\n        else:\n            indata = indata[common].copy()\n            metadata = metadata.loc[common]\n            for h in metadata.columns:\n                indata.obs[h] = metadata[h].tolist()\n\n        # Write updated h5ad file\n        outfile = os.path.join(join_out, \"EVAL_snRNA_meta.h5ad.h5ad\")\n        sc.write(filename=outfile, adata=indata)\n\n        join_out = Path(join_out)\n        yield {\"meta_file\": str(join_out / \"EVAL_snRNA_meta.h5ad.h5ad\")}\n",
+        "workers": 1,
+        "retainInputColumns": false,
+        "outputColumns": [
+          {
+            "attributeName": "meta_file",
+            "attributeType": "string"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Table Join",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true
+    },
+    {
+      "operatorID": "PythonUDFV2-operator-aaf51f05-c272-405a-b3df-03a25113b79a",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "from pytexera import *\nfrom utils import *\nimport scanpy as sc\nimport os \nimport tempfile\n\nclass ProcessTableOperator(UDFTableOperator):\n\n    @overrides\n    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n         for _, row in table.iterrows():\n            predictions = Path(row[\"predictions_file\"])\n\n            # Output results\n            reloaded = pd.read_csv(predictions)\n            for idx, row in reloaded.iterrows():\n                yield row.to_dict()\n\n\n\n# from pytexera import *\n# from utils import *\n# import scanpy as sc\n# import os \n# import tempfile\n\n# class ProcessTableOperator(UDFTableOperator):\n\n#     @overrides\n#     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n#          for _, row in table.iterrows():\n#             predictions = Path(row[\"predictions_file\"])\n\n#             # Output results\n#             reloaded = pd.read_csv(predictions)\n#             for idx, row in reloaded.iterrows():\n#                 yield row.to_dict()\n",
+        "workers": 1,
+        "retainInputColumns": false,
+        "outputColumns": [
+          {
+            "attributeName": "index",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "predictions",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "confidence",
+            "attributeType": "double"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Inference Results",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true
+    },
+    {
+      "operatorID": "PythonUDFV2-operator-7933ad0d-dcbc-4684-813b-c1cd7bda9d9f",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "from pytexera import *\nfrom utils import *\nimport scanpy as sc\nimport os \nimport tempfile\n\nclass ProcessTableOperator(UDFTableOperator):\n\n    @overrides\n    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n         for _, row in table.iterrows():\n            meta_file = row[\"meta_file\"]\n\n            reloaded = sc.read_h5ad(meta_file)\n            for idx, obs_row in reloaded.obs.iterrows():\n                yield obs_row.to_dict()   \n",
+        "workers": 1,
+        "retainInputColumns": false,
+        "outputColumns": [
+          {
+            "attributeName": "nCount_RNA",
+            "attributeType": "double"
+          },
+          {
+            "attributeName": "nFeature_RNA",
+            "attributeType": "integer"
+          },
+          {
+            "attributeName": "pANN",
+            "attributeType": "double"
+          },
+          {
+            "attributeName": "percent.mt",
+            "attributeType": "double"
+          },
+          {
+            "attributeName": "sampleid",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "donor",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "race",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "gender",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "age",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "tissue",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "majorclass",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "celltype",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "predictions",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "confidence",
+            "attributeType": "double"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Join Results",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true
+    },
+    {
+      "operatorID": "PythonUDFV2-operator-1c31ebb9-bf27-4517-b2cd-3d3365582d29",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "from pytexera import *\nimport matplotlib\nmatplotlib.use(\"Agg\")\nimport scanpy as sc\nimport seaborn as sns\nimport base64\nimport io\nimport matplotlib.pyplot as plt\nfrom typing import Optional, Iterator\n\nclass ProcessTableOperator(UDFTableOperator):\n\n    @overrides\n    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n        row = table.iloc[0]\n        infile = row[\"meta_file\"]\n\n        x = sc.read_h5ad(infile)\n\n        # Ensure required components exist\n        if \"X_umap\" not in x.obsm:\n            yield {\"html-content\": \"<h3>Error: X_umap is missing.</h3>\"}\n            return\n        if \"predictions\" not in x.obs.columns:\n            yield {\"html-content\": \"<h3>Error: 'predicted cell type' not found in obs.</h3>\"}\n            return\n\n        # Set figure parameters\n        sc.set_figure_params(dpi_save=300, figsize=(5, 5))\n\n        # Generate UMAP colored by \"predicted cell type\"\n        splitby = \"predictions\"\n        ncolor = len(x.obs[splitby].value_counts())\n        palette = sns.husl_palette(ncolor) if ncolor >= 100 else None\n\n        fig = sc.pl.umap(\n            x,\n            color=splitby,\n            palette=palette,\n            frameon=False,\n            show=False,\n            title=None,\n            legend_loc='on data',\n            legend_fontsize='xx-small',\n            legend_fontweight='normal',\n            legend_fontoutline=1,\n            return_fig=True\n        )\n\n        # Convert to base64-encoded HTML\n        buf = io.BytesIO()\n        fig.savefig(buf, format=\"png\", bbox_inches=\"tight\", dpi=300)\n        buf.seek(0)\n        img_base64 = base64.b64encode(buf.read()).decode(\"utf-8\")\n        plt.close(fig)\n\n        html = f\"<p><b>{splitby}</b></p><img src='data:image/png;base64,{img_base64}'/>\"\n        yield {\"html-content\": html}\n\n",
+        "workers": 1,
+        "retainInputColumns": false,
+        "outputColumns": [
+          {
+            "attributeName": "html-content",
+            "attributeType": "string"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Create UMAP",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true,
+      "viewResult": true
+    },
+    {
+      "operatorID": "HTMLVisualizer-operator-a146e9f5-cd19-4026-bc72-52e319b3ba36",
+      "operatorType": "HTMLVisualizer",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "htmlContentAttrName": "html-content"
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Visualize UMAP",
+      "dynamicInputPorts": false,
+      "dynamicOutputPorts": false
+    },
+    {
+      "operatorID": "PythonUDFV2-operator-96bd1ef0-dad2-435b-ac50-30bff4f6db9e",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "from pytexera import *\nimport sys\nimport scanpy as sc\nimport os \nimport io\nimport base64\nimport matplotlib\nimport matplotlib.pyplot as plt\nmatplotlib.use(\"Agg\")\n\nclass ProcessTableOperator(UDFTableOperator):\n\n    @overrides\n    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n        row = table.iloc[0]\n        infile = row[\"meta_file\"]\n\n        # Configurable parameters\n        groupby = \"predictions\"\n        feature = \"nCount_RNA\"  # Feature to plot violin for\n\n        # Load and preprocess data\n        indata = sc.read(infile)\n        sc.pp.normalize_total(indata)\n        sc.pp.log1p(indata)\n\n        # Ensure required columns exist\n        if groupby not in indata.obs.columns:\n            yield {\"html-content\": f\"<h3>Error: '{groupby}' not found in obs.</h3>\"}\n            return\n        if feature not in indata.obs.columns:\n            yield {\"html-content\": f\"<h3>Error: '{feature}' not found in obs.</h3>\"}\n            return\n\n        sc.set_figure_params(dpi_save=300, figsize=(5, 5))\n\n        # Create and render the violin plot\n        try:\n            sc.pl.violin(\n                indata,\n                keys=[feature],\n                groupby=groupby,\n                use_raw=False,\n                stripplot=False,\n                rotation=90,\n                xlabel=groupby,\n                show=False\n            )\n\n            fig = plt.gcf()\n            buf = io.BytesIO()\n            fig.savefig(buf, format=\"png\", bbox_inches=\"tight\", dpi=300)\n            buf.seek(0)\n            encoded = base64.b64encode(buf.read()).decode(\"utf-8\")\n            plt.close(fig)\n\n            html = f\"<h4>{feature}</h4><img src='data:image/png;base64,{encoded}'/>\"\n            yield {\"html-content\": html}\n\n        except Exception as e:\n            yield {\"html-content\": f\"<h3>Error rendering violin plot: {str(e)}</h3>\"}\n",
+        "workers": 1,
+        "retainInputColumns": false,
+        "outputColumns": [
+          {
+            "attributeName": "html-content",
+            "attributeType": "string"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Create Violin Plot",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true
+    },
+    {
+      "operatorID": "HTMLVisualizer-operator-00dd4a6d-1d6d-41cb-aac2-901844aba156",
+      "operatorType": "HTMLVisualizer",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "htmlContentAttrName": "html-content"
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Visualize Violin Plot",
+      "dynamicInputPorts": false,
+      "dynamicOutputPorts": false
+    },
+    {
+      "operatorID": "PythonUDFV2-operator-fc272a79-8835-4145-ade7-7c404d646717",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "from pytexera import *\nfrom utils import *\nimport pandas as pd\nimport tempfile\n\nclass ProcessTableOperator(UDFTableOperator):\n\n    @overrides \n    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n        # Load inputs from Step 1\n        row = table.iloc[0]\n        load_model = row[\"model_dir\"]\n        train_args = row[\"train_args_file\"]\n        input_dataset = row[\"input_dataset\"]\n        save_dir1 = Path(row[\"save_dir1\"])\n\n        # Step 2 save directory\n        save_dir2 = Path(tempfile.mkdtemp(prefix=\"scgpt_step2_\"))\n        save_dir2.mkdir(parents=True, exist_ok=True)\n\n        # Config\n        max_seq_len = -1\n        freeze_predecoder = False\n        batch_size = 5\n        epochs = 1\n\n        hyperparameter_defaults = load_config(eval=True, load_model_dir=load_model, custom_config=train_args)\n\n        # Update configs\n        task_info = hyperparameter_defaults['task_info']\n        preprocess_config = hyperparameter_defaults['preprocess']\n        model_params = hyperparameter_defaults['model_parameters']\n        task_configs = hyperparameter_defaults['task_configs']\n        wandb_config = hyperparameter_defaults['wandb_configs']\n\n        model_params['load_model'] = load_model\n        model_params['epochs'] = epochs\n        model_params['batch_size'] = batch_size\n        model_params['freeze_predecoder'] = freeze_predecoder\n        task_configs['max_seq_len'] = task_configs['max_seq_len'] if max_seq_len == -1 else max_seq_len\n       \n        wandb_config['mode'] = 'offline'\n        wandb_config['project'] = 'inference'\n        wandb_config['name'] = ''\n\n        # Setup W&B\n        wandb_dir = \"/tmp/wandb\"\n        os.makedirs(wandb_dir, exist_ok=True)\n        wandb.init(\n            project=wandb_config['project'],\n            mode=wandb_config['mode'],\n            name=wandb_config['name'],\n            dir=wandb_dir\n        )\n\n        wandb_instance = ProtocolWandB(hyperparameter_defaults)\n        run = wandb_instance.create_wandb_project()\n        config = wandb.config\n\n        # Start time\n        START_POINT = time.time()\n\n        # Init logger\n        set_seed(model_params['seed'])\n        logger = scg.logger\n        scg.utils.add_file_handler(logger, save_dir2 / \"run.log\")\n        print(f\"Current evaluation progress is saved to -> {save_dir2}\")\n\n        # Constants\n        pad_token = config.task_configs['pad_token']\n        special_tokens = [pad_token, config.task_configs['cls_token'], config.task_configs['eoc_token']]\n        mask_value = config.task_configs['mask_value']\n        pad_value = config.task_configs['pad_value']\n        append_cls = config.task_configs['append_cls']\n        include_zero_gene = config.task_configs['include_zero_gene']\n        max_seq_len = config.task_configs['max_seq_len']\n        n_input_bins = config.task_configs['n_input_bins']\n        _cell_type_col = preprocess_config['_FIXED_CELL_TYPE_COL']\n        _cell_type_id = preprocess_config['_FIXED_CELL_TYPE_ID_COL']\n\n        CLS = config.task_configs['CLS']\n        input_emb_style = config.task_configs['input_emb_style']\n        cell_emb_style = config.task_configs['cell_emb_style']\n        ecs_threshold = config.task_configs['ecs_threshold']\n\n        # Model parameters\n        lr = config.model_parameters['lr']\n        batch_size = config.model_parameters['batch_size']\n        epochs = config.model_parameters['epochs']\n        schedule_interval = config.model_parameters['schedule_interval']\n        fast_transformer = config.model_parameters['use_flash_attn']\n        fast_transformer_backend = config.model_parameters['fast_transformer_backend']\n        embsize = config.model_parameters['embsize']\n        d_hid = config.model_parameters['d_hid']\n        nlayers = config.model_parameters['nlayers']\n        nhead = config.model_parameters['nheads']\n        nlayers_cls = config.model_parameters['nlayers_cls']\n        dropout = config.model_parameters['dropout']\n        log_interval = config.model_parameters['log_interval']\n        save_eval_interval = config.model_parameters['save_eval_interval']\n\n        # Read input data\n        adata = sc.read_h5ad(input_dataset, backed='r')\n        genes = adata.var[config.preprocess['_FIXED_GENE_COL']].tolist()\n\n        # Load model files\n        print(f'Start loading pre-trained model and weights ...')\n        model_dir = Path(load_model)\n        model_file = model_dir / \"best_model.pt\"\n        model_config_file = model_dir / \"args.json\"\n        vocab_file = model_dir / \"vocab.json\"\n        vocab = get_vocab(vocab_file, special_tokens)\n        vocab.set_default_index(vocab[\"<pad>\"])\n        gene_ids = np.array(vocab(genes), dtype=int)\n\n        # Data loader\n        data_collator = DataCollator(\n            do_padding=True,\n            pad_token_id=\"<pad>\",\n            do_mlm=False,\n            do_binning=True,\n            mask_value=mask_value,\n            pad_value=pad_value,\n            max_length=max_seq_len,\n            data_style=\"cls\",\n            filtered_gene_list=gene_ids,\n            vocab=vocab,\n            append_cls=append_cls,\n            include_zero_gene=include_zero_gene\n        )\n\n        test_dataset = SeqDataset(adata, cell_type_id_col=_cell_type_id)\n        test_loader = DataLoader(\n            test_dataset,\n            batch_size=batch_size,\n            sampler=SequentialSampler(test_dataset),\n            collate_fn=data_collator,\n            drop_last=False,\n            num_workers=0,\n            pin_memory=True\n        )\n\n        # Model initialization\n        device = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\n        ntokens = len(vocab)\n        id2type_json_path = Path(load_model, config.task_info['id2type_json'].split('/')[-1])\n        with open(id2type_json_path, 'r') as f:\n            ref_id2type = json.load(f)\n        model = TransformerModel(\n            ntokens, embsize, nhead, d_hid, nlayers, nlayers_cls=nlayers_cls,\n            n_cls=len(ref_id2type) if CLS else 1, vocab=vocab, dropout=dropout,\n            pad_token=pad_token, pad_value=pad_value,\n            do_mvc=config.task_configs['MVC'], do_dab=config.task_configs['DAB'],\n            use_batch_labels=config.model_parameters['use_batch_labels'],\n            domain_spec_batchnorm=config.model_parameters['DSBN'],\n            input_emb_style=input_emb_style, n_input_bins=n_input_bins,\n            cell_emb_style=cell_emb_style, ecs_threshold=ecs_threshold,\n            use_fast_transformer=fast_transformer,\n            fast_transformer_backend=fast_transformer_backend,\n            pre_norm=config.model_parameters['pre_norm'],\n        )\n\n        try:\n            model.load_state_dict(torch.load(model_file))\n            print(f\"Loaded model from {model_file}\")\n        except:\n            pretrained_dict = {\n                k: v for k, v in torch.load(model_file, map_location=device).items()\n                if k in model.state_dict() and v.shape == model.state_dict()[k].shape\n            }\n            model.load_state_dict({**model.state_dict(), **pretrained_dict})\n\n        for name, param in model.named_parameters():\n            if freeze_predecoder and \"encoder\" in name and \"transformer_encoder\" not in name:\n                print(f\"Freezing: {name}\")\n                param.requires_grad = False\n\n        model.to(device)\n        if torch.cuda.device_count() > 1:\n            model = nn.DataParallel(model)\n\n        wandb.watch(model)\n\n        # Evaluation\n        print(\"Starting inference...\")\n        print(\"adata.obs columns:\", adata.obs.columns.tolist())\n        criterion_cls = nn.CrossEntropyLoss()\n        labels = adata.obs[_cell_type_id].tolist() if _cell_type_id in adata.obs else None\n        predictions, results, precision_dict, wrong_predictions, confidences = test(\n            model, loader=test_loader, adata=adata,\n            true_cell_type_ids=labels, ref_id2type=ref_id2type,\n            pad_vocab=vocab[pad_token], criterion_cls=criterion_cls,\n            config=config, epoch=epochs, logger=logger, device=device\n        )\n\n        inference_time = round(time.time() - START_POINT, 2)\n        wandb.log({\"Inference Time\": inference_time})\n        print(f\"Inference completed in {inference_time} seconds\")\n\n        adata.obs['predictions'] = [ref_id2type[str(p)] for p in predictions]\n        subset_obs = adata.obs[['predictions']].copy()\n        subset_obs['confidence'] = confidences.max(axis=1)\n        subset_obs.reset_index().to_csv(save_dir2 / 'predictions.csv', index=False)\n\n        print(f\"Outputting Results\")\n        run.finish()\n        wandb.finish()\n        gc.collect()\n\n        yield{\"predictions_file\": str(save_dir2 / \"predictions.csv\")}",
+        "workers": 1,
+        "retainInputColumns": false,
+        "outputColumns": [
+          {
+            "attributeName": "predictions_file",
+            "attributeType": "string"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Inference",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true
+    },
+    {
+      "operatorID": "PythonUDFV2-operator-66265562-fd2d-41ff-9e7a-3405686623d8",
+      "operatorType": "PythonUDFV2",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "code": "from pytexera import *\nfrom utils import *\nimport scanpy as sc\nimport os\nimport tempfile\nimport shutil\nimport json\nimport numpy as np\nfrom pathlib import Path\nimport yaml\n\nclass GenerateOperator(UDFSourceOperator):\n    parameters = None\n\n    @overrides\n    def produce(self) -> Iterator[Union[TupleLike, TableLike, None]]:\n        if port == 0:\n            params = table['parameters'].tolist()\n            self.parameters = {\n                \"file_path\": str(params[0].split(\"=\", 1)[1]),\n                \"n_hvg\": int(params[1].split(\"=\", 1)[1]),\n            }\n            print(self.parameters)\n        else:\n            # Create isolated temp directories\n            model_dir = tempfile.mkdtemp(prefix=\"scgpt_model_\")\n            save_dir = Path(tempfile.mkdtemp(prefix=\"scgpt_out_\"))\n            input_h5ad_path = os.path.join(model_dir, \"downsized_input.h5ad\")\n\n            # Load and write .h5ad input file\n            file_doc = DatasetFileDocument(self.parameters[\"file_path\"])\n            with open(input_h5ad_path, \"wb\") as f:\n                f.write(file_doc.read_file().read())\n\n            # Copy model files\n            base_model_path = \"/texera-admin/scgpt-model/v2 - 2/\"\n            file_paths = [\n                \"best_model.pt\", \"dev_train_args.yml\", \"id2type.json\",\n                \"model_e1.pt\", \"protocol_finetune.py\", \"run.log\", \"vocab.json\"\n            ]\n            for filename in file_paths:\n                source_path = base_model_path + filename\n                dest_path = os.path.join(model_dir, filename)\n                f_src = DatasetFileDocument(source_path)\n                with open(dest_path, \"wb\") as f_dst:\n                    f_dst.write(f_src.read_file().read())\n\n            do_norm = True\n            filter_gene_by_counts = 0\n            filter_cell_by_counts = 0\n            n_hvg = self.parameters[\"n_hvg\"]\n            hvg_flavor = 'seurat_v3'\n            cell_type_col = None\n            batch_id_col = None\n\n            load_model = model_dir\n            dataset_directory = input_h5ad_path\n\n            hyperparameter_defaults = load_config(preprocess=True, load_model_dir=load_model)\n            task_info = hyperparameter_defaults['task_info']\n            preprocess_config = hyperparameter_defaults['preprocess']\n            model_params = hyperparameter_defaults['model_parameters']\n\n            # Update config\n            task_info['raw_dataset_directory'] = dataset_directory\n            task_info['raw_dataset_name'] = 'eyeGPT'\n            preprocess_config['do_norm'] = do_norm\n            preprocess_config['filter_gene_by_counts'] = filter_gene_by_counts\n            preprocess_config['filter_cell_by_counts'] = filter_cell_by_counts\n            preprocess_config['n_hvg'] = n_hvg\n            preprocess_config['hvg_flavor'] = hvg_flavor\n            preprocess_config['dataset_cell_type_col'] = None if cell_type_col is None else cell_type_col\n            preprocess_config['dataset_batch_id_col'] = None if batch_id_col is None else batch_id_col\n            model_params['do_train'] = False\n            model_params['load_model'] = load_model\n\n            logger = scg.logger\n            task_info['save_dir'] = str(save_dir)\n            print(f\"Running pre-process program is saved to -> {save_dir}\")\n\n            # Pre-process dataframe\n            file_dir = task_info['raw_dataset_directory']\n            print(f'Start reading data from {file_dir}')\n            adata = sc.read_h5ad(file_dir)\n            _gene_name = preprocess_config['_FIXED_GENE_COL']\n            input_data_cell_type_col = preprocess_config['dataset_cell_type_col']\n            input_data_batch_id_col = preprocess_config['dataset_batch_id_col']\n            _cell_type_col = _cell_type_id = _batch_id = None\n\n            if input_data_cell_type_col is None and input_data_batch_id_col is None:\n                print('*** Cell type and batch id columns are Not specified')\n                print('Preprocess dataset as testing dataset for inference task ...')\n                preprocess_config['_FIXED_BATCH_ID_COL'] = None\n                preprocess_config['_FIXED_CELL_TYPE_COL'] = None\n                preprocess_config['_FIXED_CELL_TYPE_ID_COL'] = None\n\n            elif input_data_cell_type_col is None and input_data_batch_id_col is not None:\n                print('*** Detected batch ID column only')\n                print('Preprocess dataset as testing dataset for inference task ...')\n                _batch_id = preprocess_config['_FIXED_BATCH_ID_COL']\n                adata.obs[_batch_id] = adata.obs[input_data_batch_id_col].astype(\"category\").cat.codes.values\n                preprocess_config['_FIXED_CELL_TYPE_COL'] = None\n                preprocess_config['_FIXED_CELL_TYPE_ID_COL'] = None\n\n            elif input_data_cell_type_col is not None and input_data_batch_id_col is None:\n                print('*** Detected Cell type column only')\n                print('Preprocess dataset as testing dataset for fine-tune/evaluation task ...')\n                _cell_type_col = preprocess_config['_FIXED_CELL_TYPE_COL']\n                _cell_type_id = preprocess_config['_FIXED_CELL_TYPE_ID_COL']\n                adata.obs[_cell_type_col] = adata.obs[input_data_cell_type_col].astype(\"category\")\n\n                if len(task_info['id2type_json']) > 0:\n                    id2type_json_path = Path(load_model, task_info['id2type_json'].split('/')[-1]) if load_model else task_info['id2type_json']\n                    with open(id2type_json_path, 'r') as f:\n                        id2type = json.load(f)\n                    type2id = {name: int(i) for i, name in id2type.items()}\n                    adata.obs[_cell_type_id] = adata.obs[_cell_type_col].map(type2id)\n                else:\n                    adata.obs[_cell_type_id] = adata.obs[_cell_type_col].astype(\"category\").cat.codes.values\n                    id2type = dict(enumerate(adata.obs[_cell_type_col].astype(\"category\").cat.categories))\n                    task_info['id2type_json'] = save_json(id2type, save_dir)\n\n            else:\n                print('Preprocess dataset as testing dataset ...')\n                _cell_type_col = preprocess_config['_FIXED_CELL_TYPE_COL']\n                _cell_type_id = preprocess_config['_FIXED_CELL_TYPE_ID_COL']\n                _batch_id = preprocess_config['_FIXED_BATCH_ID_COL']\n                adata.obs[_cell_type_col] = adata.obs[input_data_cell_type_col].astype(\"category\")\n                adata.obs[_batch_id] = adata.obs[input_data_batch_id_col].astype(\"category\").cat.codes.values\n\n                if len(task_info['id2type_json']) > 0:\n                    id2type_json_path = Path(load_model, task_info['id2type_json'].split('/')[-1]) if load_model else task_info['id2type_json']\n                    with open(id2type_json_path, 'r') as f:\n                        id2type = json.load(f)\n                    type2id = {name: int(i) for i, name in id2type.items()}\n                    adata.obs[_cell_type_id] = adata.obs[_cell_type_col].map(type2id)\n                else:\n                    adata.obs[_cell_type_id] = adata.obs[_cell_type_col].astype(\"category\").cat.codes.values\n                    id2type = dict(enumerate(adata.obs[_cell_type_col].astype(\"category\").cat.categories))\n                    task_info['id2type_json'] = save_json(id2type, save_dir)\n\n            adata.var.index = adata.var.index.astype(str)\n            adata.var.index.name = None\n            adata.var[_gene_name] = adata.var.index.tolist()\n\n            # Load vocab\n            model_dir = Path(load_model)\n            vocab_file = model_dir / \"vocab.json\"\n            shutil.copy(vocab_file, save_dir / \"vocab.json\")\n            pad_token = hyperparameter_defaults['task_configs']['pad_token']\n            special_tokens = [\n                pad_token,\n                hyperparameter_defaults['task_configs']['cls_token'],\n                hyperparameter_defaults['task_configs']['eoc_token']\n            ]\n            vocab = get_vocab(vocab_file, special_tokens)\n            adata.var[\"id_in_vocab\"] = [1 if gene in vocab else -1 for gene in adata.var[_gene_name]]\n            gene_ids_in_vocab = np.array(adata.var[\"id_in_vocab\"])\n            print(f\"match {np.sum(gene_ids_in_vocab >= 0)}/{len(gene_ids_in_vocab)} genes in vocabulary of size {len(vocab)}.\")\n            adata = adata[:, adata.var[\"id_in_vocab\"] >= 0]\n\n            # Preprocess\n            preprocessor = Preprocessor(\n                logger,\n                use_key=\"X\",\n                filter_gene_by_counts=preprocess_config['filter_gene_by_counts'],\n                filter_cell_by_counts=preprocess_config['filter_cell_by_counts'],\n                normalize_total=preprocess_config['normalize_total'],\n                log1p=preprocess_config['do_norm'],\n                subset_hvg=preprocess_config['n_hvg'],\n                hvg_flavor=preprocess_config['hvg_flavor'],\n            )\n            print(f\"Original data shape: {adata.shape}\")\n            preprocessor(adata, batch_key=_batch_id)\n            print(f\"Preprocessed data shape: {adata.shape}\")\n\n            print(f'Saving processed adata to {save_dir} ...')\n            input_dataset_directory = save_h5ad(adata, save_dir)\n            final_h5ad_path = Path(input_dataset_directory)\n            task_info['input_dataset_directory'] = input_dataset_directory\n\n            with open(f\"{save_dir}/train_args.yml\", 'w') as out_configs:\n                yaml.dump(hyperparameter_defaults, out_configs, sort_keys=False)\n\n            print('=' * 20)\n            print(f'Saved training-ready config file to current directory ...')\n            print('Pre-processing finished. Cleaning cache ... Terminating ...')\n            print('=' * 20)\n\n            # ✅ Yield paths for Step 2 to use\n            yield {\n                \"input_dataset\": str(final_h5ad_path),\n                \"model_dir\": str(model_dir),\n                \"save_dir1\": str(save_dir),\n                \"train_args_file\": str(save_dir / \"train_args.yml\"),\n                \"vocab_file\": str(save_dir / \"vocab.json\")\n            }\n\n\n\n\n\n# from pytexera import *\n# from utils import *\n# import scanpy as sc\n# import os\n# import tempfile\n# import shutil\n# import json\n# import numpy as np\n# from pathlib import Path\n# import yaml\n\n# class GenerateOperator(UDFSourceOperator):\n\n#     @overrides\n#     def produce(self) -> Iterator[Union[TupleLike, TableLike, None]]:\n#         # Create isolated temp directories\n#         model_dir = tempfile.mkdtemp(prefix=\"scgpt_model_\")\n#         save_dir = Path(tempfile.mkdtemp(prefix=\"scgpt_out_\"))\n#         input_h5ad_path = os.path.join(model_dir, \"downsized_input.h5ad\")\n\n#         # Load and write .h5ad input file\n#         #file_doc = DatasetFileDocument(\"/sarah_asad@live.com/scgpt-data-100/v2 - 2/downsized_file_100.h5ad\")\n#         file_doc = DatasetFileDocument(\"/texera-admin/scgpt-safe/v1 - 1/downsized_safe.h5ad\")\n#         with open(input_h5ad_path, \"wb\") as f:\n#             f.write(file_doc.read_file().read())\n\n#         # Copy model files\n#         base_model_path = \"/texera-admin/scgpt-model/v2 - 2/\"\n#         file_paths = [\n#             \"best_model.pt\", \"dev_train_args.yml\", \"id2type.json\",\n#             \"model_e1.pt\", \"protocol_finetune.py\", \"run.log\", \"vocab.json\"\n#         ]\n#         for filename in file_paths:\n#             source_path = base_model_path + filename\n#             dest_path = os.path.join(model_dir, filename)\n#             f_src = DatasetFileDocument(source_path)\n#             with open(dest_path, \"wb\") as f_dst:\n#                 f_dst.write(f_src.read_file().read())\n\n#         do_norm = True\n#         filter_gene_by_counts = 0\n#         filter_cell_by_counts = 0\n#         n_hvg = 5000\n#         hvg_flavor = 'seurat_v3'\n#         cell_type_col = None\n#         batch_id_col = None\n\n#         load_model = model_dir\n#         dataset_directory = input_h5ad_path\n\n#         hyperparameter_defaults = load_config(preprocess=True, load_model_dir=load_model)\n#         task_info = hyperparameter_defaults['task_info']\n#         preprocess_config = hyperparameter_defaults['preprocess']\n#         model_params = hyperparameter_defaults['model_parameters']\n\n#         # Update config\n#         task_info['raw_dataset_directory'] = dataset_directory\n#         task_info['raw_dataset_name'] = 'eyeGPT'\n#         preprocess_config['do_norm'] = do_norm\n#         preprocess_config['filter_gene_by_counts'] = filter_gene_by_counts\n#         preprocess_config['filter_cell_by_counts'] = filter_cell_by_counts\n#         preprocess_config['n_hvg'] = n_hvg\n#         preprocess_config['hvg_flavor'] = hvg_flavor\n#         preprocess_config['dataset_cell_type_col'] = None if cell_type_col is None else cell_type_col\n#         preprocess_config['dataset_batch_id_col'] = None if batch_id_col is None else batch_id_col\n#         model_params['do_train'] = False\n#         model_params['load_model'] = load_model\n\n#         logger = scg.logger\n#         task_info['save_dir'] = str(save_dir)\n#         print(f\"Running pre-process program is saved to -> {save_dir}\")\n\n#         # Pre-process dataframe\n#         file_dir = task_info['raw_dataset_directory']\n#         print(f'Start reading data from {file_dir}')\n#         adata = sc.read_h5ad(file_dir)\n#         _gene_name = preprocess_config['_FIXED_GENE_COL']\n#         input_data_cell_type_col = preprocess_config['dataset_cell_type_col']\n#         input_data_batch_id_col = preprocess_config['dataset_batch_id_col']\n#         _cell_type_col = _cell_type_id = _batch_id = None\n\n#         if input_data_cell_type_col is None and input_data_batch_id_col is None:\n#             print('*** Cell type and batch id columns are Not specified')\n#             print('Preprocess dataset as testing dataset for inference task ...')\n#             preprocess_config['_FIXED_BATCH_ID_COL'] = None\n#             preprocess_config['_FIXED_CELL_TYPE_COL'] = None\n#             preprocess_config['_FIXED_CELL_TYPE_ID_COL'] = None\n\n#         elif input_data_cell_type_col is None and input_data_batch_id_col is not None:\n#             print('*** Detected batch ID column only')\n#             print('Preprocess dataset as testing dataset for inference task ...')\n#             _batch_id = preprocess_config['_FIXED_BATCH_ID_COL']\n#             adata.obs[_batch_id] = adata.obs[input_data_batch_id_col].astype(\"category\").cat.codes.values\n#             preprocess_config['_FIXED_CELL_TYPE_COL'] = None\n#             preprocess_config['_FIXED_CELL_TYPE_ID_COL'] = None\n\n#         elif input_data_cell_type_col is not None and input_data_batch_id_col is None:\n#             print('*** Detected Cell type column only')\n#             print('Preprocess dataset as testing dataset for fine-tune/evaluation task ...')\n#             _cell_type_col = preprocess_config['_FIXED_CELL_TYPE_COL']\n#             _cell_type_id = preprocess_config['_FIXED_CELL_TYPE_ID_COL']\n#             adata.obs[_cell_type_col] = adata.obs[input_data_cell_type_col].astype(\"category\")\n\n#             if len(task_info['id2type_json']) > 0:\n#                 id2type_json_path = Path(load_model, task_info['id2type_json'].split('/')[-1]) if load_model else task_info['id2type_json']\n#                 with open(id2type_json_path, 'r') as f:\n#                     id2type = json.load(f)\n#                 type2id = {name: int(i) for i, name in id2type.items()}\n#                 adata.obs[_cell_type_id] = adata.obs[_cell_type_col].map(type2id)\n#             else:\n#                 adata.obs[_cell_type_id] = adata.obs[_cell_type_col].astype(\"category\").cat.codes.values\n#                 id2type = dict(enumerate(adata.obs[_cell_type_col].astype(\"category\").cat.categories))\n#                 task_info['id2type_json'] = save_json(id2type, save_dir)\n\n#         else:\n#             print('Preprocess dataset as testing dataset ...')\n#             _cell_type_col = preprocess_config['_FIXED_CELL_TYPE_COL']\n#             _cell_type_id = preprocess_config['_FIXED_CELL_TYPE_ID_COL']\n#             _batch_id = preprocess_config['_FIXED_BATCH_ID_COL']\n#             adata.obs[_cell_type_col] = adata.obs[input_data_cell_type_col].astype(\"category\")\n#             adata.obs[_batch_id] = adata.obs[input_data_batch_id_col].astype(\"category\").cat.codes.values\n\n#             if len(task_info['id2type_json']) > 0:\n#                 id2type_json_path = Path(load_model, task_info['id2type_json'].split('/')[-1]) if load_model else task_info['id2type_json']\n#                 with open(id2type_json_path, 'r') as f:\n#                     id2type = json.load(f)\n#                 type2id = {name: int(i) for i, name in id2type.items()}\n#                 adata.obs[_cell_type_id] = adata.obs[_cell_type_col].map(type2id)\n#             else:\n#                 adata.obs[_cell_type_id] = adata.obs[_cell_type_col].astype(\"category\").cat.codes.values\n#                 id2type = dict(enumerate(adata.obs[_cell_type_col].astype(\"category\").cat.categories))\n#                 task_info['id2type_json'] = save_json(id2type, save_dir)\n\n#         adata.var.index = adata.var.index.astype(str)\n#         adata.var.index.name = None\n#         adata.var[_gene_name] = adata.var.index.tolist()\n\n#         # Load vocab\n#         model_dir = Path(load_model)\n#         vocab_file = model_dir / \"vocab.json\"\n#         shutil.copy(vocab_file, save_dir / \"vocab.json\")\n#         pad_token = hyperparameter_defaults['task_configs']['pad_token']\n#         special_tokens = [\n#             pad_token,\n#             hyperparameter_defaults['task_configs']['cls_token'],\n#             hyperparameter_defaults['task_configs']['eoc_token']\n#         ]\n#         vocab = get_vocab(vocab_file, special_tokens)\n#         adata.var[\"id_in_vocab\"] = [1 if gene in vocab else -1 for gene in adata.var[_gene_name]]\n#         gene_ids_in_vocab = np.array(adata.var[\"id_in_vocab\"])\n#         print(f\"match {np.sum(gene_ids_in_vocab >= 0)}/{len(gene_ids_in_vocab)} genes in vocabulary of size {len(vocab)}.\")\n#         adata = adata[:, adata.var[\"id_in_vocab\"] >= 0]\n\n#         # Preprocess\n#         preprocessor = Preprocessor(\n#             logger,\n#             use_key=\"X\",\n#             filter_gene_by_counts=preprocess_config['filter_gene_by_counts'],\n#             filter_cell_by_counts=preprocess_config['filter_cell_by_counts'],\n#             normalize_total=preprocess_config['normalize_total'],\n#             log1p=preprocess_config['do_norm'],\n#             subset_hvg=preprocess_config['n_hvg'],\n#             hvg_flavor=preprocess_config['hvg_flavor'],\n#         )\n#         print(f\"Original data shape: {adata.shape}\")\n#         preprocessor(adata, batch_key=_batch_id)\n#         print(f\"Preprocessed data shape: {adata.shape}\")\n\n#         print(f'Saving processed adata to {save_dir} ...')\n#         input_dataset_directory = save_h5ad(adata, save_dir)\n#         final_h5ad_path = Path(input_dataset_directory)\n#         task_info['input_dataset_directory'] = input_dataset_directory\n\n#         with open(f\"{save_dir}/train_args.yml\", 'w') as out_configs:\n#             yaml.dump(hyperparameter_defaults, out_configs, sort_keys=False)\n\n#         print('=' * 20)\n#         print(f'Saved training-ready config file to current directory ...')\n#         print('Pre-processing finished. Cleaning cache ... Terminating ...')\n#         print('=' * 20)\n\n#         yield {\n#             \"input_dataset\": str(final_h5ad_path),\n#             \"model_dir\": str(model_dir),\n#             \"save_dir1\": str(save_dir),\n#             \"train_args_file\": str(save_dir / \"train_args.yml\"),\n#             \"vocab_file\": str(save_dir / \"vocab.json\")\n#         }\n\n\n\n\n\n\n",
+        "workers": 1,
+        "retainInputColumns": true,
+        "outputColumns": [
+          {
+            "attributeName": "input_dataset",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "model_dir",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "save_dir1",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "train_args_file",
+            "attributeType": "string"
+          },
+          {
+            "attributeName": "vocab_file",
+            "attributeType": "string"
+          }
+        ]
+      },
+      "inputPorts": [
+        {
+          "portID": "input-0",
+          "displayName": "",
+          "allowMultiInputs": true,
+          "isDynamicPort": false,
+          "dependencies": []
+        }
+      ],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Preprocessing",
+      "dynamicInputPorts": true,
+      "dynamicOutputPorts": true
+    },
+    {
+      "operatorID": "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da",
+      "operatorType": "TextInput",
+      "operatorVersion": "N/A",
+      "operatorProperties": {
+        "attributeType": "string",
+        "attributeName": "line",
+        "textInput": "file_path=/texera-admin/scgpt-safe/v1 - 1/downsized_safe.h5ad\nn_hvg=1500"
+      },
+      "inputPorts": [],
+      "outputPorts": [
+        {
+          "portID": "output-0",
+          "displayName": "",
+          "allowMultiInputs": false,
+          "isDynamicPort": false
+        }
+      ],
+      "showAdvanced": false,
+      "isDisabled": false,
+      "customDisplayName": "Parameters",
+      "dynamicInputPorts": false,
+      "dynamicOutputPorts": false
+    }
+  ],
+  "operatorPositions": {
+    "PythonUDFV2-operator-45227d1f-da41-471e-adb8-6a9455f49b89": {
+      "x": 140,
+      "y": 80
+    },
+    "PythonUDFV2-operator-c3b95588-b579-4a50-adab-bb5099d724a3": {
+      "x": 280,
+      "y": 160
+    },
+    "PythonUDFV2-operator-aaf51f05-c272-405a-b3df-03a25113b79a": {
+      "x": 280,
+      "y": 320
+    },
+    "PythonUDFV2-operator-7933ad0d-dcbc-4684-813b-c1cd7bda9d9f": {
+      "x": 420,
+      "y": 0
+    },
+    "PythonUDFV2-operator-1c31ebb9-bf27-4517-b2cd-3d3365582d29": {
+      "x": 420,
+      "y": 160
+    },
+    "HTMLVisualizer-operator-a146e9f5-cd19-4026-bc72-52e319b3ba36": {
+      "x": 560,
+      "y": 160
+    },
+    "PythonUDFV2-operator-96bd1ef0-dad2-435b-ac50-30bff4f6db9e": {
+      "x": 420,
+      "y": 320
+    },
+    "HTMLVisualizer-operator-00dd4a6d-1d6d-41cb-aac2-901844aba156": {
+      "x": 560,
+      "y": 320
+    },
+    "PythonUDFV2-operator-fc272a79-8835-4145-ade7-7c404d646717": {
+      "x": 140,
+      "y": 240
+    },
+    "PythonUDFV2-operator-66265562-fd2d-41ff-9e7a-3405686623d8": {
+      "x": 0,
+      "y": 160
+    },
+    "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": {
+      "x": -126,
+      "y": 160
+    }
+  },
+  "links": [
+    {
+      "linkID": "f2f2e84d-331e-42da-bcb7-20c20e6c7b65",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-c3b95588-b579-4a50-adab-bb5099d724a3",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-7933ad0d-dcbc-4684-813b-c1cd7bda9d9f",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "7655d02d-587b-48a2-8438-e2bccc2b3c7c",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-c3b95588-b579-4a50-adab-bb5099d724a3",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-1c31ebb9-bf27-4517-b2cd-3d3365582d29",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "80dec22d-e94a-4e65-ba26-5714a4aea8df",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-1c31ebb9-bf27-4517-b2cd-3d3365582d29",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "HTMLVisualizer-operator-a146e9f5-cd19-4026-bc72-52e319b3ba36",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "11785c41-7a9f-4648-aabd-7831be71af5f",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-c3b95588-b579-4a50-adab-bb5099d724a3",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-96bd1ef0-dad2-435b-ac50-30bff4f6db9e",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "link-89f47219-309e-455e-9755-6adbc270d26e",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-96bd1ef0-dad2-435b-ac50-30bff4f6db9e",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "HTMLVisualizer-operator-00dd4a6d-1d6d-41cb-aac2-901844aba156",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "3fd037b2-9208-4d26-b21b-09d32b5610f7",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-fc272a79-8835-4145-ade7-7c404d646717",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-c3b95588-b579-4a50-adab-bb5099d724a3",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "34e548a0-70f7-460d-a3fe-8bfc8ea71b4d",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-fc272a79-8835-4145-ade7-7c404d646717",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-aaf51f05-c272-405a-b3df-03a25113b79a",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "63715c84-0224-4efe-a853-b38f0a646d88",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-66265562-fd2d-41ff-9e7a-3405686623d8",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-45227d1f-da41-471e-adb8-6a9455f49b89",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "b60d78a8-acb8-484d-b43d-8a20ae21e90e",
+      "source": {
+        "operatorID": "PythonUDFV2-operator-66265562-fd2d-41ff-9e7a-3405686623d8",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-fc272a79-8835-4145-ade7-7c404d646717",
+        "portID": "input-0"
+      }
+    },
+    {
+      "linkID": "07cc1943-c329-49c4-b130-d86186a05c88",
+      "source": {
+        "operatorID": "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da",
+        "portID": "output-0"
+      },
+      "target": {
+        "operatorID": "PythonUDFV2-operator-66265562-fd2d-41ff-9e7a-3405686623d8",
+        "portID": "input-0"
+      }
+    }
+  ],
+  "commentBoxes": [],
+  "settings": {
+    "dataTransferBatchSize": 400
+  }
+}

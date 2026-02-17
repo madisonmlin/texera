@@ -5,6 +5,9 @@ import {WorkflowTemplateService} from "../../../../service/user/workflow-templat
 import {UntilDestroy} from "@ngneat/until-destroy";
 import {WorkflowTemplate} from "../../../../type/workflow-template";
 
+import workflow from "../../../../../../assets/workflow_templates/scGPT_FINAL.json";
+
+
 @UntilDestroy()
 @Component({
   selector: "texera-workflow-template-selection",
@@ -66,6 +69,20 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
     // };
     //
     // this.templateService.addWorkflowTemplate(newTemplate);
+
+
+    // console.log(workflow);
+    // const newTemplate = {
+    //   tid: 2,
+    //   name: "scGPT_FINAL",
+    //   description: "",
+    //   content: JSON.stringify(workflow),
+    //   configurableParameters: JSON.stringify({
+    //     "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": ["textInput"],
+    //   }),
+    // }
+    // this.templateService.addWorkflowTemplate(newTemplate);
+
 
     this.templateOptions$ = this.templateService.getWorkflowTemplate();
     this.props.options = this.templateOptions$;
