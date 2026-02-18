@@ -28,8 +28,10 @@ import {
   isDashboardProject,
   isDashboardWorkflow,
   isDashboardWorkflowComputingUnit,
+  isDashboardWorkflowTemplate
 } from "./type-predicates";
 import { EntityType } from "../../hub/service/hub.service";
+import {DashboardWorkflowTemplate} from "./dashboard-workflow-template.interface";
 
 export interface UserInfo {
   userName: string;
@@ -57,14 +59,7 @@ export class DashboardEntry {
   accessibleUserIds: number[];
   coverImageUrl?: string;
 
-  constructor(
-    public value:
-      | DashboardWorkflow
-      | DashboardProject
-      | DashboardFile
-      | DashboardDataset
-      | DashboardWorkflowComputingUnit
-  ) {
+  constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset | DashboardWorkflowTemplate | DashboardWorkflowComputingUnit) {
     if (isDashboardWorkflow(value)) {
       this.type = EntityType.Workflow;
       this.id = value.workflow.wid;
@@ -138,6 +133,24 @@ export class DashboardEntry {
       this.isLiked = false;
       this.accessibleUserIds = [];
       this.coverImageUrl = value.dataset.coverImage;
+    } else if (isDashboardWorkflowTemplate(value)) {
+      this.type = EntityType.WorkflowTemplate;
+      this.id = value.workflowTemplate.tid;
+      this.name = value.workflowTemplate.name;
+      this.description = value.workflowTemplate.description;
+      this.creationTime = value.workflowTemplate.creationTime;
+      this.lastModifiedTime = value.workflowTemplate.lastModifiedTime;
+      this.accessLevel = value.accessLevel;
+      this.ownerName = value.ownerName;
+      this.ownerEmail = "";
+      this.ownerGoogleAvatar = "";
+      this.ownerId = value.ownerId;
+      this.size = 0;
+      this.viewCount = 0;
+      this.cloneCount = 0;
+      this.likeCount = 0;
+      this.isLiked = false;
+      this.accessibleUserIds = [];
     } else if (isDashboardWorkflowComputingUnit(value)) {
       this.type = EntityType.ComputingUnit;
       this.id = value.computingUnit.cuid;
@@ -207,6 +220,13 @@ export class DashboardEntry {
   get dataset(): DashboardDataset {
     if (!isDashboardDataset(this.value)) {
       throw new Error("Value is not of type DashboardDataset");
+    }
+    return this.value;
+  }
+
+  get workflowTemplate(): DashboardWorkflowTemplate {
+    if (!isDashboardWorkflowTemplate(this.value)) {
+      throw new Error("Value is not of type DashboardWorkflowTemplate.");
     }
     return this.value;
   }

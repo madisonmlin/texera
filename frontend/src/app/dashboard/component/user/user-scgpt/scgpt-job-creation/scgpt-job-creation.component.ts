@@ -42,7 +42,7 @@ import {ShareAccessService} from "../../../../service/user/share-access/share-ac
 import {isEqual} from "lodash-es";
 import {map, Observable, of, tap} from "rxjs";
 import {cloneDeep} from "lodash";
-import {WorkflowTemplate} from "../../../../type/workflow-template";
+import {WorkflowTemplate} from "../../../../../common/type/workflow-template";
 import {switchMap} from "rxjs/operators";
 
 @UntilDestroy()

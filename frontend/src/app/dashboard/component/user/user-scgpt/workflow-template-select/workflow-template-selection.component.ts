@@ -3,7 +3,7 @@ import { FieldType, FieldTypeConfig } from "@ngx-formly/core";
 import {Observable} from "rxjs";
 import {WorkflowTemplateService} from "../../../../service/user/workflow-template/workflow-template.service";
 import {UntilDestroy} from "@ngneat/until-destroy";
-import {WorkflowTemplate} from "../../../../type/workflow-template";
+import {WorkflowTemplate} from "../../../../../common/type/workflow-template";
 
 import workflow from "../../../../../../assets/workflow_templates/scGPT_FINAL.json";
 
@@ -65,12 +65,16 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
     //   configurableParameters: JSON.stringify({
     //     "CSVFileScan-operator": ["fileName"],
     //     "Limit-operator": ["limit"],
-    //   })
+    //   }),
+    //   creationTime: 0,
+    //   lastModifiedTime: 0,
+    //   isPublished: 0,
+    //   readonly: true,
     // };
     //
     // this.templateService.addWorkflowTemplate(newTemplate);
-
-
+    //
+    //
     // console.log(workflow);
     // const newTemplate = {
     //   tid: 2,
@@ -80,6 +84,10 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
     //   configurableParameters: JSON.stringify({
     //     "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": ["textInput"],
     //   }),
+    //   creationTime: 0,
+    //   lastModifiedTime: 0,
+    //   isPublished: 0,
+    //   readonly: true,
     // }
     // this.templateService.addWorkflowTemplate(newTemplate);
 

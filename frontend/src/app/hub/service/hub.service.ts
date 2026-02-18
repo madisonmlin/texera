@@ -30,6 +30,7 @@ export enum EntityType {
   Dataset = "dataset",
   Project = "project",
   File = "file",
+  WorkflowTemplate = "workflowTemplate",
   ComputingUnit = "computing-unit",
 }
 
