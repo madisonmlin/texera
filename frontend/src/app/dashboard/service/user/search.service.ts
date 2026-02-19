@@ -73,7 +73,7 @@ export class SearchService {
     params: SearchFilterParameters,
     start: number,
     count: number,
-    type: "workflow" | "project" | "file" | "dataset" | null,
+    type: "workflow" | "project" | "file" | "dataset" | "workflowTemplate" | null,
     orderBy: SortMethod,
     isLogin: boolean,
     includePublic: boolean = false
@@ -125,7 +125,7 @@ export class SearchService {
     params: SearchFilterParameters,
     start: number,
     count: number,
-    type: "workflow" | "project" | "dataset" | "file" | null,
+    type: "workflow" | "project" | "dataset" | "file" | "workflowTemplate" | null,
     orderBy: SortMethod,
     isLogin: boolean,
     includePublic: boolean
@@ -136,7 +136,8 @@ export class SearchService {
         const filteredResults =
           type === "dataset" ? results.results.filter(i => i !== null && i.dataset != null) : results.results;
 
-        return this.extendSearchResultsWithHubActivityInfo(filteredResults, isLogin).pipe(
+        const activities = type === "workflowTemplate" ? (["access", "size"] as EnrichActivity[]) : [];
+        return this.extendSearchResultsWithHubActivityInfo(filteredResults, isLogin, activities).pipe(
           map(entries => ({
             entries,
             more: results.more,
@@ -173,6 +174,7 @@ export class SearchService {
       if (i.project) userIds.add(i.project.ownerId);
       else if (i.workflow) userIds.add(i.workflow.ownerId);
       else if (i.dataset?.dataset?.ownerUid != null) userIds.add(i.dataset.dataset.ownerUid);
+      else if (i.workflowTemplate?.ownerId != null) userIds.add(i.workflowTemplate.ownerId);
     });
     const userInfo$ = userIds.size ? this.getUserInfo(Array.from(userIds)) : of({} as Record<number, UserInfo>);
 
@@ -188,6 +190,9 @@ export class SearchService {
       } else if (i.dataset?.dataset?.did != null) {
         entityTypes.push(EntityType.Dataset);
         entityIds.push(i.dataset.dataset.did);
+      } else if (i.workflowTemplate?.workflowTemplate?.tid != null) {
+        entityTypes.push(EntityType.WorkflowTemplate);
+        entityIds.push(i.workflowTemplate?.workflowTemplate?.tid);
       }
     });
 
@@ -224,14 +229,18 @@ export class SearchService {
             ? new DashboardEntry(i.workflow)
             : i.project
               ? new DashboardEntry(i.project)
-              : new DashboardEntry(i.dataset!);
+              : i.dataset
+                ? new DashboardEntry(i.dataset)
+                : new DashboardEntry(i.workflowTemplate!);
 
           const key = `${entry.type}:${entry.id}`;
           const ownerId = i.workflow
             ? i.workflow.ownerId
             : i.project
               ? i.project.ownerId
-              : i.dataset!.dataset!.ownerUid!;
+              : i.dataset
+                ? i.dataset!.dataset!.ownerUid!
+                : i.workflowTemplate!.ownerId!;
           const ui = (userMap as any)[ownerId];
           if (ui) {
             entry.setOwnerName(ui.userName);
@@ -252,7 +261,6 @@ export class SearchService {
           if (doSize && entry.type === EntityType.Workflow && entry.id != null) {
             entry.setSize(sizesMap[entry.id] ?? 0);
           }
-
           return entry;
         });
       })

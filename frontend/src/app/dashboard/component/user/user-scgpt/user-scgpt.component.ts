@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Component, inject, OnInit } from "@angular/core";
+import {Component, inject, OnInit, ViewChild} from "@angular/core";
 import {DASHBOARD_USER_SCGPT} from "../../../../app-routing.constant";
 import {NzModalService} from "ng-zorro-antd/modal";
 import {UserService} from "../../../../common/service/user/user.service";
@@ -26,6 +26,12 @@ import {SearchService} from "../../../service/user/search.service";
 import {DatasetService} from "../../../service/user/dataset/dataset.service";
 import {NzMessageService} from "ng-zorro-antd/message";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
+import {DashboardEntry} from "../../../type/dashboard-entry";
+import {SearchResultsComponent} from "../search-results/search-results.component";
+import {FiltersComponent} from "../filters/filters.component";
+import {SortMethod} from "../../../type/sort-method";
+import {firstValueFrom} from "rxjs";
+import {map} from "rxjs/operators";
 
 @UntilDestroy()
 @Component({
@@ -33,8 +39,34 @@ import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
   styleUrls: ["./user-scgpt.component.scss"]
 })
 export class UserScGPTComponent implements OnInit {
+  private _searchResultsComponent?: SearchResultsComponent;
   public isLogin = this.userService.isLogin();
+  private includePublic = false;
   public currentUid = this.userService.getCurrentUser()?.uid;
+  @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
+    if (this._searchResultsComponent) {
+      return this._searchResultsComponent;
+    }
+    throw new Error("Property cannot be accessed before it is initialized.");
+  }
+  set searchResultsComponent(value: SearchResultsComponent) {
+    this._searchResultsComponent = value;
+  }
+  private _filters?: FiltersComponent;
+  @ViewChild(FiltersComponent) get filters(): FiltersComponent {
+    if (this._filters) {
+      return this._filters;
+    }
+    throw new Error("Property cannot be accessed before it is initialized.");
+  }
+  set filters(value: FiltersComponent) {
+    value.masterFilterListChange.pipe(untilDestroyed(this)).subscribe({ next: () => this.search() });
+    this._filters = value;
+  }
+  private masterFilterList: ReadonlyArray<string> | null = null;
+
+  public sortMethod = SortMethod.EditTimeDesc;
+  lastSortMethod: SortMethod | null = null;
 
   constructor(
     private modalService: NzModalService,
@@ -53,13 +85,67 @@ export class UserScGPTComponent implements OnInit {
       });
   }
 
+  async search(forced: Boolean = false): Promise<void> {
+    const sameList =
+      this.masterFilterList !== null &&
+      this.filters.masterFilterList.length === this.masterFilterList.length &&
+      this.filters.masterFilterList.every((v, i) => v === this.masterFilterList![i]);
+    if (!forced && sameList && this.sortMethod === this.lastSortMethod) {
+      // If the filter lists are the same, do no make the same request again.
+      return;
+    }
+    this.lastSortMethod = this.sortMethod;
+    this.masterFilterList = this.filters.masterFilterList;
+    let filterParams = this.filters.getSearchFilterParameters();
+
+    this.searchResultsComponent.reset((start, count) => {
+      return firstValueFrom(
+        this.searchService
+          .executeSearch(
+            this.filters.getSearchKeywords(),
+            filterParams,
+            start,
+            count,
+            "workflowTemplate",
+            this.sortMethod,
+            this.isLogin,
+            this.includePublic
+          )
+          .pipe(map(({ entries, more }) => ({ entries, more })))
+      );
+    });
+    await this.searchResultsComponent.loadMore();
+  }
+
+  public selectionTooltip: string = "Select all";
+
+  public updateTooltip(): void {
+    const entries = this.searchResultsComponent.entries;
+    const allSelected = entries.every(entry => entry.checked);
+    this.selectionTooltip = allSelected ? "Unselect all" : "Select all";
+  }
+
+  ngAfterViewInit() {
+    this.userService
+      .userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => this.search());
+  }
+
+  public async onClickDuplicateWorkflowTemplate(entry: DashboardEntry): Promise<void> {}
+
+  public deleteWorkflowTemplate(entry: DashboardEntry): void {}
+
   ngOnInit(): void {
     return;
   }
 
   public onClickOpenScGPTJobAddComponent(): void {
-    console.log("Clicked.");
     this.router.navigate([`${DASHBOARD_USER_SCGPT}/1`]);
     return;
+  }
+
+  public refreshSearchResult() {
+    void this.search(true);
   }
 }

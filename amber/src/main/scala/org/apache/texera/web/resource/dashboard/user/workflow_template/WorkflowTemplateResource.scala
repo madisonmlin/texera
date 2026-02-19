@@ -5,9 +5,10 @@ import io.dropwizard.auth.Auth
 import org.apache.texera.auth.SessionUser
 import org.apache.texera.dao.SqlServer
 import org.apache.texera.dao.jooq.generated.Tables.WORKFLOW_TEMPLATE
-import org.apache.texera.dao.jooq.generated.tables.daos.WorkflowTemplateDao
+import org.apache.texera.dao.jooq.generated.tables.daos.{WorkflowTemplateDao, WorkflowTemplateUserAccessDao}
 import org.apache.texera.dao.jooq.generated.tables.pojos.User
 import org.apache.texera.dao.jooq.generated.tables.pojos._
+import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource.context
 
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.{GET, NotFoundException, POST, Path, PathParam, Produces}
@@ -22,6 +23,18 @@ object WorkflowTemplateResource {
     .getInstance()
     .createDSLContext()
   final private lazy val workflowTemplateDao = new WorkflowTemplateDao(context.configuration)
+  private def workflowTemplateUserAccessDao =
+    new WorkflowTemplateUserAccessDao(
+      context.configuration()
+    )
+
+  case class DashboardWorkflowTemplate(
+                                isOwner: Boolean,
+                                ownerName: String,
+                                workflowTemplate: WorkflowTemplate,
+                                accessLevel: String,
+                                ownerId: Integer,
+                              )
 
   def getWorkflowTemplateName(tid: Integer): String = {
     val workflow_template = workflowTemplateDao.fetchOneByTid(tid)
@@ -31,7 +44,7 @@ object WorkflowTemplateResource {
     workflow_template.getName
   }
 
-  private def insertWorkflow(workflow_template: WorkflowTemplate, user: User): Unit = {
+  private def insertWorkflowTemplate(workflow_template: WorkflowTemplate, user: User): Unit = {
     workflowTemplateDao.insert(workflow_template)
   }
 }
@@ -47,6 +60,12 @@ class WorkflowTemplateResource extends LazyLogging {
   def addWorkflowTemplate(workflow_template: WorkflowTemplate, @Auth sessionUser: SessionUser): Unit = {
     workflow_template.setTid(null)
     workflowTemplateDao.insert(workflow_template)
+    workflowTemplateUserAccessDao.insert(
+      new WorkflowTemplateUserAccess(
+        sessionUser.getUid,
+        workflow_template.getTid
+      )
+    )
   }
 
   @GET

@@ -72,7 +72,8 @@ object UnifiedResourceSchema {
       repositoryName: Field[String] = DSL.inline(""),
       isDatasetPublic: Field[java.lang.Boolean] = DSL.cast(null, classOf[java.lang.Boolean]),
       isDatasetDownloadable: Field[java.lang.Boolean] = DSL.cast(null, classOf[java.lang.Boolean]),
-      datasetUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum])
+      datasetUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
+      tid: Field[Integer] = DSL.cast(null, classOf[Integer]),
   ): UnifiedResourceSchema = {
     new UnifiedResourceSchema(
       Seq(
@@ -96,7 +97,8 @@ object UnifiedResourceSchema {
         repositoryName -> repositoryName.as("repository_name"),
         isDatasetPublic -> isDatasetPublic.as("is_dataset_public"),
         isDatasetDownloadable -> isDatasetDownloadable.as("is_dataset_downloadable"),
-        datasetUserAccess -> datasetUserAccess.as("user_dataset_access")
+        datasetUserAccess -> datasetUserAccess.as("user_dataset_access"),
+        tid -> tid.as("tid"),
       )
     )
   }
@@ -140,6 +142,9 @@ object UnifiedResourceSchema {
   * - `isDatasetPublic`: Indicates if the dataset is public, as a `Boolean`.
   * - `isDatasetDownloadable`: Indicates if the dataset is downloadable, as a `Boolean`.
   * - `datasetUserAccess`: Access privileges for the dataset, as a `PrivilegeEnum`
+  *
+  * Attributes specific to workflow templates:
+  * - `tid`: Workflow Template ID, as an `Integer`.
   */
 class UnifiedResourceSchema private (
     fieldMappingSeq: Seq[(Field[_], Field[_])]

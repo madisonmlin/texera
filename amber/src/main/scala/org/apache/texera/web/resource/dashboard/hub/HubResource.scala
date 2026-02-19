@@ -671,6 +671,8 @@ class HubResource {
             (WORKFLOW_USER_ACCESS: Table[_], WORKFLOW_USER_ACCESS.WID, WORKFLOW_USER_ACCESS.UID)
           case EntityType.Dataset =>
             (DATASET_USER_ACCESS: Table[_], DATASET_USER_ACCESS.DID, DATASET_USER_ACCESS.UID)
+          case EntityType.WorkflowTemplate =>
+            (WORKFLOW_TEMPLATE_USER_ACCESS: Table[_], WORKFLOW_TEMPLATE_USER_ACCESS.TID, WORKFLOW_TEMPLATE_USER_ACCESS.UID)
         }
 
         val records = context

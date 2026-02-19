@@ -36,7 +36,7 @@
     </div>
   </nz-card>
 
-  <div class="section-search-bar">
+  <div class="section-search-bar workflow-template-search-bar">
     <texera-filters-instructions></texera-filters-instructions>
     <nz-select
       #searchInput
@@ -51,4 +51,13 @@
       [nzAllowClear]="true">
     </nz-select>
   </div>
+
+  <texera-search-results
+    [editable]="true"
+    [isPrivateSearch]="true"
+    (deleted)="deleteWorkflowTemplate($event)"
+    (refresh)="refreshSearchResult()"
+    (duplicated)="onClickDuplicateWorkflowTemplate($event)"
+    [currentUid]="currentUid"
+    (notifyWorkflow)="updateTooltip()"></texera-search-results>
 </div>

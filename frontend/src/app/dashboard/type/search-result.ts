@@ -22,13 +22,15 @@ import { DashboardWorkflow } from "./dashboard-workflow.interface";
 import { DashboardProject } from "./dashboard-project.interface";
 import { DashboardDataset } from "./dashboard-dataset.interface";
 import { DashboardEntry } from "./dashboard-entry";
+import {DashboardWorkflowTemplate} from "./dashboard-workflow-template.interface";
 
 export interface SearchResultItem {
-  resourceType: "workflow" | "project" | "file" | "dataset" | "computing-unit";
+  resourceType: "workflow" | "project" | "file" | "dataset" | "workflowTemplate" | "computing-unit";
   workflow?: DashboardWorkflow;
   project?: DashboardProject;
   file?: DashboardFile;
   dataset?: DashboardDataset;
+  workflowTemplate?: DashboardWorkflowTemplate;
 }
 
 export interface SearchResult {

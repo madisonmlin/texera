@@ -36,7 +36,7 @@ export const toQueryStrings = (
   params: SearchFilterParameters,
   start?: number,
   count?: number,
-  type?: "workflow" | "project" | "file" | "dataset" | null,
+  type?: "workflow" | "project" | "file" | "dataset" | "workflowTemplate" | null,
   orderBy?: SortMethod
 ): string => {
   function* getQueryParameters(): Iterable<[name: string, value: string]> {
