@@ -150,7 +150,7 @@ routes.push({
           component: UserScGPTComponent,
         },
         {
-          path: "scgpt/:jid",
+          path: "scgpt/:tid",
           component: ScGPTJobCreationComponent,
         },
       ],

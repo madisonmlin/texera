@@ -19,7 +19,7 @@
 
 import { FormlyFieldConfig } from "@ngx-formly/core";
 import { FormGroup, FormControl } from "@angular/forms";
-import { Component, OnInit } from "@angular/core";
+import {AfterViewInit, Component, OnInit} from "@angular/core";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {NzModalService} from "ng-zorro-antd/modal";
 import {NotificationService} from "../../../../../common/service/notification/notification.service";
@@ -44,59 +44,34 @@ import {map, Observable, of, tap} from "rxjs";
 import {cloneDeep} from "lodash";
 import {WorkflowTemplate} from "../../../../../common/type/workflow-template";
 import {switchMap} from "rxjs/operators";
+import {ActivatedRoute} from "@angular/router";
 
 @UntilDestroy()
 @Component({
   templateUrl: "./scgpt-job-creation.component.html",
   styleUrls: ["./scgpt-job-creation.component.scss"]
 })
-export class ScGPTJobCreationComponent implements OnInit {
-  public jid: number | undefined;
-  public wid: number | undefined;
+export class ScGPTJobCreationComponent implements AfterViewInit, OnInit {
   public tid: number | undefined;
+  public wid: number | undefined;
   public template: WorkflowContent | undefined;
   public operatorIndexToId: string[] = [];
   public operatorIndexToForm: Record<string, any>[] = [];
   public isLogin: boolean = this.userService.isLogin();
   public currentUid: number | undefined;
   public workflowInitialized: boolean = false;
-  public populated: boolean = false;
   public configurableProperties: string | undefined;
 
   workflow: Workflow | undefined;
   model = {
-    template: null,
     filePath: null,
     nHVG: null,
   };
   form = new FormGroup({
-    template: new FormControl(this.model.template),
     filePath: new FormControl(this.model.filePath),
     nHVG: new FormControl(this.model.nHVG),
   });
   fields: FormlyFieldConfig[] = [
-    {
-      key: "template",
-      type: "workflowtemplateselection",
-      props: {
-        label: "Template",
-        description: "Template to generate workflow from.",
-        required: true,
-      },
-      hooks: {
-        onInit: field => {
-          field.formControl!.valueChanges
-            .pipe(untilDestroyed(this))
-            .subscribe(tid => {
-              if (tid == null) {
-                return;
-              }
-              this.tid = tid;
-              this.onWorkflowTemplateSelected(tid);
-            });
-        },
-      },
-    },
     {
       key: "filePath",
       type: "inputautocomplete",
@@ -105,9 +80,6 @@ export class ScGPTJobCreationComponent implements OnInit {
         // description: "File containing data to plot.",
         required: true,
       },
-      expressions: {
-        hide: field => field.model?.template === null
-      }
     },
     {
       key: "nHVG",
@@ -119,9 +91,6 @@ export class ScGPTJobCreationComponent implements OnInit {
         min: 1,
         step: 1
       },
-      expressions: {
-        hide: field => field.model?.template === null
-      }
     },
   ];
 
@@ -134,6 +103,7 @@ export class ScGPTJobCreationComponent implements OnInit {
     private computingUnitStatusService: ComputingUnitStatusService,
     private computingUnitService: WorkflowComputingUnitManagingService,
     private workflowPersistService: WorkflowPersistService,
+    private route: ActivatedRoute,
     private http: HttpClient
   ) {
     this.userService
@@ -143,19 +113,6 @@ export class ScGPTJobCreationComponent implements OnInit {
         this.currentUid = this.userService.getCurrentUser()?.uid;
         this.isLogin = this.userService.isLogin();
       });
-  }
-
-  onWorkflowTemplateSelected(tid: number): void {
-    this.getWorkflowTemplateContent(tid)
-      .pipe(untilDestroyed(this))
-      .subscribe(
-        (response) => {
-          this.template = response;
-          this.operatorIndexToId = response.operators.map(op => op.operatorID);
-          this.operatorIndexToForm = response.operators.map(op => cloneDeep(op.operatorProperties))
-          // create formly fields based on workflow template operator parameters (operator, parameter name, field type, props)
-        }
-      )
   }
 
   onJobFormValidated(): void {
@@ -201,9 +158,9 @@ export class ScGPTJobCreationComponent implements OnInit {
   }
 
   // move to workflow-template.service.ts
-  private getWorkflowTemplateContent(templateId: number): Observable<WorkflowContent> {
+  private getWorkflowTemplateContent(): Observable<WorkflowContent> {
     return this.http.get<WorkflowTemplate>(
-      `${AppSettings.getApiEndpoint()}/workflow-template/${templateId}`
+      `${AppSettings.getApiEndpoint()}/workflow-template/${this.tid}`
     ).pipe(
       map(template => JSON.parse(template.content))
     );
@@ -222,7 +179,6 @@ export class ScGPTJobCreationComponent implements OnInit {
       const workflow = this.workflowActionService.getWorkflow();
       return this.workflowPersistService.persistWorkflow(workflow).pipe(
         tap(() => {
-          this.populated = true;
           this.notificationService.success("Workflow updated.");
         })
       );
@@ -251,5 +207,19 @@ export class ScGPTJobCreationComponent implements OnInit {
   ngOnInit(): void {
     this.wid = undefined;
     return;
+  }
+
+  ngAfterViewInit(): void {
+    this.tid = this.route.snapshot.params.tid;
+    this.getWorkflowTemplateContent()
+      .pipe(untilDestroyed(this))
+      .subscribe(
+        (response) => {
+          this.template = response;
+          this.operatorIndexToId = response.operators.map(op => op.operatorID);
+          this.operatorIndexToForm = response.operators.map(op => cloneDeep(op.operatorProperties))
+          // create formly fields based on workflow template operator parameters (operator, parameter name, field type, props)
+        }
+      )
   }
 }
