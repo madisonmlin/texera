@@ -17,14 +17,14 @@
  * under the License.
  */
 
-import { HttpClient } from "@angular/common/http";
-import { Injectable } from "@angular/core";
-import { forkJoin, Observable, of } from "rxjs";
-import { SearchResult, SearchResultBatch, SearchResultItem } from "../../type/search-result";
-import { AppSettings } from "../../../common/app-setting";
-import { SearchFilterParameters, toQueryStrings } from "../../type/search-filter-parameters";
-import { SortMethod } from "../../type/sort-method";
-import { DashboardEntry, UserInfo } from "../../type/dashboard-entry";
+import {HttpClient} from "@angular/common/http";
+import {Injectable} from "@angular/core";
+import {forkJoin, Observable, of} from "rxjs";
+import {SearchResult, SearchResultBatch, SearchResultItem} from "../../type/search-result";
+import {AppSettings} from "../../../common/app-setting";
+import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-parameters";
+import {SortMethod} from "../../type/sort-method";
+import {DashboardEntry, UserInfo} from "../../type/dashboard-entry";
 import {
   AccessResponse,
   ActionType,
@@ -33,8 +33,9 @@ import {
   HubService,
   LikedStatus,
 } from "../../../hub/service/hub.service";
-import { map, switchMap } from "rxjs/operators";
-import { WorkflowPersistService } from "../../../common/service/workflow-persist/workflow-persist.service";
+import {map, switchMap} from "rxjs/operators";
+import {WorkflowPersistService} from "../../../common/service/workflow-persist/workflow-persist.service";
+import {WorkflowTemplateService} from "./workflow-template/workflow-template.service";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
 const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/publicSearch";
@@ -48,7 +49,8 @@ export class SearchService {
   constructor(
     private http: HttpClient,
     private hubService: HubService,
-    private workflowPersistService: WorkflowPersistService
+    private workflowPersistService: WorkflowPersistService,
+    private workflowTemplateService: WorkflowTemplateService,
   ) {}
 
   /**
@@ -208,10 +210,13 @@ export class SearchService {
         : of([] as AccessResponse[]);
 
     const workflowIds = items.map(i => i.workflow?.workflow?.wid).filter((wid): wid is number => wid != null);
+    const workflowTemplateIds = items.map(i => i.workflowTemplate?.workflowTemplate?.tid).filter((tid): tid is number => tid != null);
     const sizes$ =
       doSize && workflowIds.length > 0
         ? this.workflowPersistService.getSizes(workflowIds)
-        : of({} as Record<number, number>);
+        : doSize && workflowTemplateIds.length > 0
+          ? this.workflowTemplateService.getSizes(workflowTemplateIds)
+          : of({} as Record<number, number>);
 
     return forkJoin([userInfo$, counts$, liked$, access$, sizes$]).pipe(
       map(([userMap, counts, liked, access, sizesMap]) => {
@@ -258,7 +263,7 @@ export class SearchService {
             entry.setAccessUsers(accessMap[key] ?? []);
           }
 
-          if (doSize && entry.type === EntityType.Workflow && entry.id != null) {
+          if (doSize && (entry.type === EntityType.Workflow || entry.type === EntityType.WorkflowTemplate) && entry.id != null) {
             entry.setSize(sizesMap[entry.id] ?? 0);
           }
           return entry;

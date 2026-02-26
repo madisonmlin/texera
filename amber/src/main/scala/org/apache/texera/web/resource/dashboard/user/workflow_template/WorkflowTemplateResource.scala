@@ -4,14 +4,15 @@ import com.typesafe.scalalogging.LazyLogging
 import io.dropwizard.auth.Auth
 import org.apache.texera.auth.SessionUser
 import org.apache.texera.dao.SqlServer
-import org.apache.texera.dao.jooq.generated.Tables.WORKFLOW_TEMPLATE
+import org.apache.texera.dao.jooq.generated.Tables.{WORKFLOW, WORKFLOW_TEMPLATE, WORKFLOW_TEMPLATES}
 import org.apache.texera.dao.jooq.generated.tables.daos.{WorkflowTemplateDao, WorkflowTemplateUserAccessDao}
 import org.apache.texera.dao.jooq.generated.tables.pojos.User
 import org.apache.texera.dao.jooq.generated.tables.pojos._
+import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.workflowDao
 import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource.context
 
 import javax.ws.rs.core.MediaType
-import javax.ws.rs.{GET, NotFoundException, POST, Path, PathParam, Produces}
+import javax.ws.rs.{GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam}
 import scala.jdk.CollectionConverters._
 import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource._
 
@@ -89,5 +90,23 @@ class WorkflowTemplateResource extends LazyLogging {
   @Path("/{tid}")
   def retrieveWorkflowTemplate(@PathParam("tid") tid: Integer, @Auth sessionUser: SessionUser): WorkflowTemplateEntry = {
     this.workflowTemplateService.retrieveWorkflowTemplate(tid);
+  }
+
+  @GET
+  @Path("/size")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getSize(@QueryParam("tid") tids: java.util.List[Integer]): java.util.Map[Integer, Int] = {
+    val result = new java.util.HashMap[Integer, Int]()
+    if (tids != null && !tids.isEmpty) {
+      workflowTemplateDao.ctx
+        .selectFrom(WORKFLOW_TEMPLATE)
+        .where(WORKFLOW_TEMPLATE.TID.in(tids))
+        .fetch()
+        .asScala
+        .foreach { wf =>
+          result.put(wf.getTid, wf.getContent.length)
+        }
+    }
+    result
   }
 }
