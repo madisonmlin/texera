@@ -57,6 +57,7 @@ DROP TABLE IF EXISTS workflow CASCADE;
 DROP TABLE IF EXISTS workflow_version CASCADE;
 DROP TABLE IF EXISTS workflow_template CASCADE;
 DROP TABLE IF EXISTS workflow_of_template CASCADE;
+DROP TABLE IF EXISTS workflow_template_of_user CASCADE;
 DROP TABLE IF EXISTS workflow_template_user_access CASCADE;
 DROP TABLE IF EXISTS project CASCADE;
 DROP TABLE IF EXISTS workflow_of_project CASCADE;
@@ -186,11 +187,22 @@ CREATE TABLE IF NOT EXISTS workflow_of_template
     FOREIGN KEY (wid) REFERENCES workflow(wid) ON DELETE CASCADE
     );
 
+-- workflow_template_of_user
+CREATE TABLE IF NOT EXISTS workflow_template_of_user
+(
+    uid INT NOT NULL,
+    tid INT NOT NULL,
+    PRIMARY KEY (uid, tid),
+    FOREIGN KEY (uid) REFERENCES "user"(uid) ON DELETE CASCADE,
+    FOREIGN KEY (tid) REFERENCES workflow_template(tid) ON DELETE CASCADE
+    );
+
 -- workflow_template_user_access
 CREATE TABLE IF NOT EXISTS workflow_template_user_access
 (
     uid       INT NOT NULL,
     tid       INT NOT NULL,
+    privilege privilege_enum NOT NULL DEFAULT 'NONE',
     PRIMARY KEY (uid, tid),
     FOREIGN KEY (uid) REFERENCES "user"(uid) ON DELETE CASCADE,
     FOREIGN KEY (tid) REFERENCES workflow_template(tid) ON DELETE CASCADE

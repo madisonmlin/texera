@@ -74,6 +74,7 @@ object UnifiedResourceSchema {
       isDatasetDownloadable: Field[java.lang.Boolean] = DSL.cast(null, classOf[java.lang.Boolean]),
       datasetUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
       tid: Field[Integer] = DSL.cast(null, classOf[Integer]),
+      workflowTemplateUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
   ): UnifiedResourceSchema = {
     new UnifiedResourceSchema(
       Seq(
@@ -99,6 +100,7 @@ object UnifiedResourceSchema {
         isDatasetDownloadable -> isDatasetDownloadable.as("is_dataset_downloadable"),
         datasetUserAccess -> datasetUserAccess.as("user_dataset_access"),
         tid -> tid.as("tid"),
+        workflowTemplateUserAccess -> workflowTemplateUserAccess.as("workflow_template_privilege"),
       )
     )
   }

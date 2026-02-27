@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import {Component, inject, OnInit, ViewChild} from "@angular/core";
+import {AfterViewInit, Component, inject, OnInit, ViewChild} from "@angular/core";
 import {DASHBOARD_USER_SCGPT} from "../../../../app-routing.constant";
 import {NzModalService} from "ng-zorro-antd/modal";
 import {UserService} from "../../../../common/service/user/user.service";
@@ -32,13 +32,15 @@ import {FiltersComponent} from "../filters/filters.component";
 import {SortMethod} from "../../../type/sort-method";
 import {firstValueFrom} from "rxjs";
 import {map} from "rxjs/operators";
+import workflow from "../../../../../assets/workflow_templates/scGPT_FINAL.json";
+import {WorkflowTemplateService} from "../../../service/user/workflow-template/workflow-template.service";
 
 @UntilDestroy()
 @Component({
   templateUrl: "./user-scgpt.component.html",
   styleUrls: ["./user-scgpt.component.scss"]
 })
-export class UserScGPTComponent implements OnInit {
+export class UserScGPTComponent implements OnInit, AfterViewInit {
   private _searchResultsComponent?: SearchResultsComponent;
   public isLogin = this.userService.isLogin();
   private includePublic = false;
@@ -74,6 +76,7 @@ export class UserScGPTComponent implements OnInit {
     private router: Router,
     private searchService: SearchService,
     private datasetService: DatasetService,
+    private templateService: WorkflowTemplateService,
     private message: NzMessageService
   ) {
     this.userService
@@ -126,6 +129,20 @@ export class UserScGPTComponent implements OnInit {
   }
 
   ngAfterViewInit() {
+    // const newTemplate = {
+    //   tid: 2,
+    //   name: "scGPT_FINAL",
+    //   description: "",
+    //   content: JSON.stringify(workflow),
+    //   configurableParameters: JSON.stringify({
+    //     "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": ["textInput"],
+    //   }),
+    //   creationTime: 0,
+    //   lastModifiedTime: 0,
+    //   isPublished: 0,
+    //   readonly: true,
+    // }
+    // this.templateService.addWorkflowTemplate(newTemplate);
     this.userService
       .userChanged()
       .pipe(untilDestroyed(this))

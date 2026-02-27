@@ -194,7 +194,7 @@ export class SearchService {
         entityIds.push(i.dataset.dataset.did);
       } else if (i.workflowTemplate?.workflowTemplate?.tid != null) {
         entityTypes.push(EntityType.WorkflowTemplate);
-        entityIds.push(i.workflowTemplate?.workflowTemplate?.tid);
+        entityIds.push(i.workflowTemplate.workflowTemplate.tid);
       }
     });
 

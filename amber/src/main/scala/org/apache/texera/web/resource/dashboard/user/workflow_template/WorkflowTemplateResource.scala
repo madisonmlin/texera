@@ -4,11 +4,12 @@ import com.typesafe.scalalogging.LazyLogging
 import io.dropwizard.auth.Auth
 import org.apache.texera.auth.SessionUser
 import org.apache.texera.dao.SqlServer
-import org.apache.texera.dao.jooq.generated.Tables.{WORKFLOW, WORKFLOW_TEMPLATE, WORKFLOW_TEMPLATES}
-import org.apache.texera.dao.jooq.generated.tables.daos.{WorkflowTemplateDao, WorkflowTemplateUserAccessDao}
+import org.apache.texera.dao.jooq.generated.Tables.{WORKFLOW, WORKFLOW_TEMPLATE}
+import org.apache.texera.dao.jooq.generated.enums.PrivilegeEnum
+import org.apache.texera.dao.jooq.generated.tables.daos.{WorkflowTemplateDao, WorkflowTemplateOfUserDao, WorkflowTemplateUserAccessDao}
 import org.apache.texera.dao.jooq.generated.tables.pojos.User
 import org.apache.texera.dao.jooq.generated.tables.pojos._
-import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.workflowDao
+import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.{workflowDao, workflowOfUserDao}
 import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource.context
 
 import javax.ws.rs.core.MediaType
@@ -24,10 +25,8 @@ object WorkflowTemplateResource {
     .getInstance()
     .createDSLContext()
   final private lazy val workflowTemplateDao = new WorkflowTemplateDao(context.configuration)
-  private def workflowTemplateUserAccessDao =
-    new WorkflowTemplateUserAccessDao(
-      context.configuration()
-    )
+  final private lazy val workflowTemplateOfUserDao = new WorkflowTemplateOfUserDao(context.configuration)
+  final private lazy val workflowTemplateUserAccessDao = new WorkflowTemplateUserAccessDao(context.configuration())
 
   case class DashboardWorkflowTemplate(
                                 isOwner: Boolean,
@@ -61,10 +60,12 @@ class WorkflowTemplateResource extends LazyLogging {
   def addWorkflowTemplate(workflow_template: WorkflowTemplate, @Auth sessionUser: SessionUser): Unit = {
     workflow_template.setTid(null)
     workflowTemplateDao.insert(workflow_template)
+    workflowTemplateOfUserDao.insert(new WorkflowTemplateOfUser(sessionUser.getUid, workflow_template.getTid))
     workflowTemplateUserAccessDao.insert(
       new WorkflowTemplateUserAccess(
         sessionUser.getUid,
-        workflow_template.getTid
+        workflow_template.getTid,
+        PrivilegeEnum.READ
       )
     )
   }
