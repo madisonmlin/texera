@@ -76,7 +76,7 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
     private router: Router,
     private searchService: SearchService,
     private datasetService: DatasetService,
-    private templateService: WorkflowTemplateService,
+    private workflowTemplateService: WorkflowTemplateService,
     private message: NzMessageService
   ) {
     this.userService
@@ -142,7 +142,7 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
     //   isPublished: 0,
     //   readonly: true,
     // }
-    // this.templateService.addWorkflowTemplate(newTemplate);
+    // this.workflowTemplateService.addWorkflowTemplate(newTemplate);
     this.userService
       .userChanged()
       .pipe(untilDestroyed(this))
@@ -151,7 +151,19 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
 
   public async onClickDuplicateWorkflowTemplate(entry: DashboardEntry): Promise<void> {}
 
-  public deleteWorkflowTemplate(entry: DashboardEntry): void {}
+  public deleteWorkflowTemplate(entry: DashboardEntry): void {
+    if (entry.workflowTemplate.workflowTemplate.tid == undefined) {
+      return;
+    }
+    this.workflowTemplateService
+      .deleteWorkflowTemplate([entry.workflowTemplate.workflowTemplate.tid])
+      .pipe(untilDestroyed(this))
+      .subscribe(_ => {
+        this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
+          workflowTemplateEntry => workflowTemplateEntry.workflowTemplate.workflowTemplate.tid !== entry.workflowTemplate.workflowTemplate.tid
+        );
+      });
+  }
 
   ngOnInit(): void {
     return;

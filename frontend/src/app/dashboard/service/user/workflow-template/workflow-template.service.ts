@@ -3,11 +3,12 @@ import {HttpClient, HttpParams} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {AppSettings} from "../../../../common/app-setting";
 import {WorkflowTemplate} from "../../../../common/type/workflow-template";
-import {WORKFLOW_SIZE} from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {WORKFLOW_DELETE_URL, WORKFLOW_SIZE} from "../../../../common/service/workflow-persist/workflow-persist.service";
 
 export const WORKFLOW_TEMPLATE_BASE_URL = "workflow-template";
 export const WORKFLOW_TEMPLATE_ADD_URL = WORKFLOW_TEMPLATE_BASE_URL + "/add";
 export const WORKFLOW_TEMPLATE_LIST_URL = WORKFLOW_TEMPLATE_BASE_URL + "/list";
+export const WORKFLOW_TEMPLATE_DELETE_URL = WORKFLOW_TEMPLATE_BASE_URL + "/delete";
 export const WORKFLOW_TEMPLATE_SIZE = WORKFLOW_TEMPLATE_BASE_URL + "/size";
 
 @Injectable({
@@ -30,6 +31,12 @@ export class WorkflowTemplateService {
 
   public getWorkflowTemplate(): Observable<{ tid: string, name: string }[]> {
     return this.http.get<{ tid: string, name: string }[]>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_TEMPLATE_LIST_URL}`);
+  }
+
+  public deleteWorkflowTemplate(tids: number[]): Observable<Response> {
+    return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_TEMPLATE_DELETE_URL}`, {
+      tids: tids,
+    });
   }
 
   public getSizes(tids: number[]): Observable<Record<number, number>> {
