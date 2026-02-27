@@ -13,7 +13,7 @@ import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.{
 import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource.context
 
 import javax.ws.rs.core.MediaType
-import javax.ws.rs.{GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam}
+import javax.ws.rs.{BadRequestException, GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam}
 import scala.jdk.CollectionConverters._
 import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource._
 
@@ -58,7 +58,9 @@ class WorkflowTemplateResource extends LazyLogging {
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/add")
   def addWorkflowTemplate(workflow_template: WorkflowTemplate, @Auth sessionUser: SessionUser): Unit = {
-    workflow_template.setTid(null)
+    if (workflow_template.getTid != null) {
+      throw new BadRequestException("Cannot create a new template with a provided id.")
+    }
     workflowTemplateDao.insert(workflow_template)
     workflowTemplateOfUserDao.insert(new WorkflowTemplateOfUser(sessionUser.getUid, workflow_template.getTid))
     workflowTemplateUserAccessDao.insert(

@@ -18,7 +18,6 @@ export class WorkflowTemplateService {
 
   public addWorkflowTemplate(workflow_template: WorkflowTemplate): void {
     this.http.post<void>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_TEMPLATE_ADD_URL}`, {
-      tid: workflow_template.tid,
       name: workflow_template.name,
       description: workflow_template.description,
       content: workflow_template.content,

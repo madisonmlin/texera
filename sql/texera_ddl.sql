@@ -174,6 +174,8 @@ CREATE TABLE IF NOT EXISTS workflow_template
     name 		            VARCHAR(128) NOT NULL,
     description             VARCHAR(500),
     content 	            TEXT NOT NULL,
+    creation_time           TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_modified_time      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     configurable_parameters TEXT
     );
 

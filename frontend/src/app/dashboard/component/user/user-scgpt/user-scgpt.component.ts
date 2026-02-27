@@ -130,15 +130,15 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     // const newTemplate = {
-    //   tid: 2,
+    //   tid: undefined,
     //   name: "scGPT_FINAL",
     //   description: "",
     //   content: JSON.stringify(workflow),
     //   configurableParameters: JSON.stringify({
     //     "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": ["textInput"],
     //   }),
-    //   creationTime: 0,
-    //   lastModifiedTime: 0,
+    //   creationTime: undefined,
+    //   lastModifiedTime: undefined,
     //   isPublished: 0,
     //   readonly: true,
     // }

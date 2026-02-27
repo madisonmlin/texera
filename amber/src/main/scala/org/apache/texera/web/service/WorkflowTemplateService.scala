@@ -3,8 +3,8 @@ package org.apache.texera.web.service
 import org.apache.texera.dao.jooq.generated.Tables.WORKFLOW_TEMPLATE
 import org.apache.texera.dao.jooq.generated.tables.records.WorkflowTemplateRecord
 import org.jooq.DSLContext
-import play.api.libs.json.{Json, OFormat}
 
+import java.sql.Timestamp
 import javax.ws.rs.NotFoundException
 
 case class WorkflowTemplateEntry(
@@ -12,13 +12,10 @@ case class WorkflowTemplateEntry(
                                      name: String,
                                      description: String,
                                      content: String,
+                                     creation_time: Timestamp,
+                                     last_modified_time: Timestamp,
                                      configurableParameters: String
                                    )
-
-object WorkflowTemplateEntry {
-  implicit val format: OFormat[WorkflowTemplateEntry] =
-    Json.format[WorkflowTemplateEntry]
-}
 
 class WorkflowTemplateService(context: DSLContext) {
   def retrieveWorkflowTemplate(tid: Integer): WorkflowTemplateEntry = {
@@ -35,6 +32,8 @@ class WorkflowTemplateService(context: DSLContext) {
       name = record.getName,
       description = record.getDescription,
       content = record.getContent,
+      creation_time = record.getCreationTime,
+      last_modified_time = record.getLastModifiedTime,
       configurableParameters = record.getConfigurableParameters
     )
   }

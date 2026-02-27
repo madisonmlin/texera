@@ -80,8 +80,8 @@ class TemplatedWorkflowResource extends LazyLogging{
     val content = applyParameters(template.content, request.parameters);
     val workflow_template = new Workflow(
       null,                                // wid
-      "scgpt_workflow",                    // name
-      "",                                  // description
+      template.name,                       // name
+      template.description,                // description
       content,                             // content
       null,                                // creationTime
       null,                                // lastModifiedTime

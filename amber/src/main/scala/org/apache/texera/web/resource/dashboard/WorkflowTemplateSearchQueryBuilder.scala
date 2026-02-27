@@ -1,9 +1,9 @@
 package org.apache.texera.web.resource.dashboard
 
-import org.apache.texera.dao.jooq.generated.Tables.{USER, WORKFLOW_TEMPLATE, WORKFLOW_TEMPLATE_OF_USER, WORKFLOW_TEMPLATE_USER_ACCESS}
+import org.apache.texera.dao.jooq.generated.Tables.{USER, WORKFLOW, WORKFLOW_TEMPLATE, WORKFLOW_TEMPLATE_OF_USER, WORKFLOW_TEMPLATE_USER_ACCESS}
 import org.apache.texera.dao.jooq.generated.tables.pojos.WorkflowTemplate
 import org.apache.texera.web.resource.dashboard.DashboardResource.DashboardClickableFileEntry
-import org.apache.texera.web.resource.dashboard.FulltextSearchQueryUtils.{getContainsFilter, getFullTextSearchFilter}
+import org.apache.texera.web.resource.dashboard.FulltextSearchQueryUtils.{getContainsFilter, getDateFilter, getFullTextSearchFilter}
 import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource.DashboardWorkflowTemplate
 import org.jooq.{Condition, GroupField, Record, TableLike}
 import org.jooq.impl.DSL
@@ -17,7 +17,9 @@ object WorkflowTemplateSearchQueryBuilder extends SearchQueryBuilder {
       resourceType = DSL.inline(SearchQueryBuilder.WORKFLOW_TEMPLATE_RESOURCE_TYPE),
       name = WORKFLOW_TEMPLATE.NAME,
       description = WORKFLOW_TEMPLATE.DESCRIPTION,
+      creationTime = WORKFLOW_TEMPLATE.CREATION_TIME,
       tid = WORKFLOW_TEMPLATE.TID,
+      lastModifiedTime = WORKFLOW_TEMPLATE.LAST_MODIFIED_TIME,
       workflowTemplateUserAccess = WORKFLOW_TEMPLATE_USER_ACCESS.PRIVILEGE,
       uid = WORKFLOW_TEMPLATE_OF_USER.UID,
       ownerId = WORKFLOW_TEMPLATE_OF_USER.UID,
@@ -37,7 +39,16 @@ object WorkflowTemplateSearchQueryBuilder extends SearchQueryBuilder {
       .on(WORKFLOW_TEMPLATE_OF_USER.TID.eq(WORKFLOW_TEMPLATE.TID))
       .leftJoin(USER)
       .on(USER.UID.eq(WORKFLOW_TEMPLATE_OF_USER.UID))
-    baseQuery
+
+    var condition: Condition = DSL.trueCondition()
+
+    if (uid == null) {
+      condition = DSL.falseCondition()
+    } else {
+      condition = WORKFLOW_TEMPLATE_USER_ACCESS.UID.eq(uid)
+    }
+
+    baseQuery.where(condition)
   }
 
   override protected def constructWhereClause(
@@ -48,7 +59,19 @@ object WorkflowTemplateSearchQueryBuilder extends SearchQueryBuilder {
       .flatMap(_.split("[+\\-()<>~*@\"]"))
       .filter(_.nonEmpty)
       .toSeq
-    getContainsFilter(params.workflowTemplateIds, WORKFLOW_TEMPLATE.TID)
+      getDateFilter(
+        params.creationStartDate,
+        params.creationEndDate,
+        WORKFLOW_TEMPLATE.CREATION_TIME
+      )
+      .and(
+        getDateFilter(
+          params.modifiedStartDate,
+          params.modifiedEndDate,
+          WORKFLOW_TEMPLATE.LAST_MODIFIED_TIME
+        )
+      )
+      .and(getContainsFilter(params.workflowTemplateIds, WORKFLOW_TEMPLATE.TID))
       .and(
         getFullTextSearchFilter(
           splitKeywords,
@@ -61,7 +84,9 @@ object WorkflowTemplateSearchQueryBuilder extends SearchQueryBuilder {
     Seq(
       WORKFLOW_TEMPLATE.NAME,
       WORKFLOW_TEMPLATE.DESCRIPTION,
+      WORKFLOW_TEMPLATE.CREATION_TIME,
       WORKFLOW_TEMPLATE.TID,
+      WORKFLOW_TEMPLATE.LAST_MODIFIED_TIME,
       WORKFLOW_TEMPLATE_USER_ACCESS.PRIVILEGE,
       WORKFLOW_TEMPLATE_OF_USER.UID,
       USER.NAME
