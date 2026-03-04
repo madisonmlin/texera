@@ -98,12 +98,12 @@
             <span>Datasets</span>
           </li>
           <li
-            *ngIf="sidebarTabs.scgpt_enabled"
+            *ngIf="sidebarTabs.template_enabled"
             nz-menu-item
-            nz-tooltip="Search workflow templates"
+            nz-tooltip="Search templates"
             nzMatchRouter="true"
             nzTooltipPlacement="right"
-            [routerLink]="DASHBOARD_USER_SCGPT">
+            [routerLink]="DASHBOARD_USER_TEMPLATE">
             <span
               nz-icon
               nzType="experiment"></span>

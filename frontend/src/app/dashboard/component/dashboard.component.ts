@@ -40,7 +40,7 @@ import {
   DASHBOARD_USER_PROJECT,
   DASHBOARD_USER_QUOTA,
   DASHBOARD_USER_WORKFLOW,
-  DASHBOARD_USER_SCGPT,
+  DASHBOARD_USER_TEMPLATE,
 } from "../../app-routing.constant";
 import { Version } from "../../../environments/version";
 import { SidebarTabs } from "../../common/type/gui-config";
@@ -76,7 +76,7 @@ export class DashboardComponent implements OnInit {
     datasets_enabled: false,
     quota_enabled: false,
     forum_enabled: false,
-    scgpt_enabled: false,
+    template_enabled: false,
     about_enabled: false,
   };
 
@@ -86,7 +86,7 @@ export class DashboardComponent implements OnInit {
   protected readonly DASHBOARD_USER_COMPUTING_UNIT = DASHBOARD_USER_COMPUTING_UNIT;
   protected readonly DASHBOARD_USER_QUOTA = DASHBOARD_USER_QUOTA;
   protected readonly DASHBOARD_USER_DISCUSSION = DASHBOARD_USER_DISCUSSION;
-  protected readonly DASHBOARD_USER_SCGPT = DASHBOARD_USER_SCGPT;
+  protected readonly DASHBOARD_USER_TEMPLATE = DASHBOARD_USER_TEMPLATE;
   protected readonly DASHBOARD_ADMIN_USER = DASHBOARD_ADMIN_USER;
   protected readonly DASHBOARD_ADMIN_GMAIL = DASHBOARD_ADMIN_GMAIL;
   protected readonly DASHBOARD_ADMIN_EXECUTION = DASHBOARD_ADMIN_EXECUTION;

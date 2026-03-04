@@ -55,10 +55,10 @@ DROP TABLE IF EXISTS "user" CASCADE;
 DROP TABLE IF EXISTS user_last_active_time CASCADE;
 DROP TABLE IF EXISTS workflow CASCADE;
 DROP TABLE IF EXISTS workflow_version CASCADE;
-DROP TABLE IF EXISTS workflow_template CASCADE;
+DROP TABLE IF EXISTS template CASCADE;
 DROP TABLE IF EXISTS workflow_of_template CASCADE;
-DROP TABLE IF EXISTS workflow_template_of_user CASCADE;
-DROP TABLE IF EXISTS workflow_template_user_access CASCADE;
+DROP TABLE IF EXISTS template_of_user CASCADE;
+DROP TABLE IF EXISTS template_user_access CASCADE;
 DROP TABLE IF EXISTS project CASCADE;
 DROP TABLE IF EXISTS workflow_of_project CASCADE;
 DROP TABLE IF EXISTS workflow_executions CASCADE;
@@ -167,8 +167,8 @@ CREATE TABLE IF NOT EXISTS workflow_version
     FOREIGN KEY (wid) REFERENCES workflow(wid) ON DELETE CASCADE
     );
 
--- workflow_template
-CREATE TABLE IF NOT EXISTS workflow_template
+-- template
+CREATE TABLE IF NOT EXISTS template
 (
     tid 		            SERIAL PRIMARY KEY,
     name 		            VARCHAR(128) NOT NULL,
@@ -185,29 +185,29 @@ CREATE TABLE IF NOT EXISTS workflow_of_template
     tid         INT NOT NULL,
     wid         INT PRIMARY KEY,
     parameters  TEXT,
-    FOREIGN KEY (tid) REFERENCES workflow_template(tid) ON DELETE CASCADE,
+    FOREIGN KEY (tid) REFERENCES template(tid) ON DELETE CASCADE,
     FOREIGN KEY (wid) REFERENCES workflow(wid) ON DELETE CASCADE
     );
 
--- workflow_template_of_user
-CREATE TABLE IF NOT EXISTS workflow_template_of_user
+-- template_of_user
+CREATE TABLE IF NOT EXISTS template_of_user
 (
     uid INT NOT NULL,
     tid INT NOT NULL,
     PRIMARY KEY (uid, tid),
     FOREIGN KEY (uid) REFERENCES "user"(uid) ON DELETE CASCADE,
-    FOREIGN KEY (tid) REFERENCES workflow_template(tid) ON DELETE CASCADE
+    FOREIGN KEY (tid) REFERENCES template(tid) ON DELETE CASCADE
     );
 
--- workflow_template_user_access
-CREATE TABLE IF NOT EXISTS workflow_template_user_access
+-- template_user_access
+CREATE TABLE IF NOT EXISTS template_user_access
 (
     uid       INT NOT NULL,
     tid       INT NOT NULL,
     privilege privilege_enum NOT NULL DEFAULT 'NONE',
     PRIMARY KEY (uid, tid),
     FOREIGN KEY (uid) REFERENCES "user"(uid) ON DELETE CASCADE,
-    FOREIGN KEY (tid) REFERENCES workflow_template(tid) ON DELETE CASCADE
+    FOREIGN KEY (tid) REFERENCES template(tid) ON DELETE CASCADE
     );
 
 -- project

@@ -1,13 +1,13 @@
 package org.apache.texera.web.service
 
-import org.apache.texera.dao.jooq.generated.Tables.WORKFLOW_TEMPLATE
-import org.apache.texera.dao.jooq.generated.tables.records.WorkflowTemplateRecord
+import org.apache.texera.dao.jooq.generated.Tables.TEMPLATE
+import org.apache.texera.dao.jooq.generated.tables.records.TemplateRecord
 import org.jooq.DSLContext
 
 import java.sql.Timestamp
 import javax.ws.rs.NotFoundException
 
-case class WorkflowTemplateEntry(
+case class TemplateEntry(
                                      tid: Int,
                                      name: String,
                                      description: String,
@@ -17,17 +17,17 @@ case class WorkflowTemplateEntry(
                                      configurableParameters: String
                                    )
 
-class WorkflowTemplateService(context: DSLContext) {
-  def retrieveWorkflowTemplate(tid: Integer): WorkflowTemplateEntry = {
+class TemplateService(context: DSLContext) {
+  def retrieveTemplate(tid: Integer): TemplateEntry = {
     val record = context
-      .selectFrom(WORKFLOW_TEMPLATE)
-      .where(WORKFLOW_TEMPLATE.TID.eq(tid))
-      .fetchOneInto(classOf[WorkflowTemplateRecord])
+      .selectFrom(TEMPLATE)
+      .where(TEMPLATE.TID.eq(tid))
+      .fetchOneInto(classOf[TemplateRecord])
 
     if (record == null)
       throw new NotFoundException(s"Template $tid not found")
 
-    WorkflowTemplateEntry(
+    TemplateEntry(
       tid = record.getTid,
       name = record.getName,
       description = record.getDescription,

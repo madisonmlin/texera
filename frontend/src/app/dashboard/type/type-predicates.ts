@@ -21,7 +21,7 @@ import { DashboardWorkflow } from "./dashboard-workflow.interface";
 import { DashboardProject } from "./dashboard-project.interface";
 import { DashboardFile } from "./dashboard-file.interface";
 import { DashboardDataset } from "./dashboard-dataset.interface";
-import {DashboardWorkflowTemplate} from "./dashboard-workflow-template.interface";
+import {DashboardTemplate} from "./dashboard-template.interface";
 import { DashboardWorkflowComputingUnit } from "../../workspace/types/workflow-computing-unit";
 
 export function isDashboardWorkflow(value: any): value is DashboardWorkflow {
@@ -40,8 +40,8 @@ export function isDashboardDataset(value: any): value is DashboardDataset {
   return value && typeof value.dataset === "object";
 }
 
-export function isDashboardWorkflowTemplate(value: any): value is DashboardWorkflowTemplate {
-  return value && typeof value.workflowTemplate === "object";
+export function isDashboardTemplate(value: any): value is DashboardTemplate {
+  return value && typeof value.template === "object";
 }
 
 export function isDashboardWorkflowComputingUnit(value: any): value is DashboardWorkflowComputingUnit {

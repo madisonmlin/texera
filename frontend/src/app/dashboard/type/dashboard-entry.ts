@@ -21,17 +21,9 @@ import { DashboardFile } from "./dashboard-file.interface";
 import { DashboardWorkflow } from "./dashboard-workflow.interface";
 import { DashboardProject } from "./dashboard-project.interface";
 import { DashboardDataset } from "./dashboard-dataset.interface";
-import { DashboardWorkflowComputingUnit } from "../../workspace/types/workflow-computing-unit";
-import {
-  isDashboardDataset,
-  isDashboardFile,
-  isDashboardProject,
-  isDashboardWorkflow,
-  isDashboardWorkflowComputingUnit,
-  isDashboardWorkflowTemplate
-} from "./type-predicates";
+import { isDashboardDataset, isDashboardFile, isDashboardProject, isDashboardWorkflow, isDashboardTemplate, isDashboardWorkflowComputingUnit } from "./type-predicates";
 import { EntityType } from "../../hub/service/hub.service";
-import {DashboardWorkflowTemplate} from "./dashboard-workflow-template.interface";
+import {DashboardTemplate} from "./dashboard-template.interface";
 
 export interface UserInfo {
   userName: string;
@@ -59,7 +51,7 @@ export class DashboardEntry {
   accessibleUserIds: number[];
   coverImageUrl?: string;
 
-  constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset | DashboardWorkflowTemplate | DashboardWorkflowComputingUnit) {
+  constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset | DashboardTemplate, DashboardWorkflowComputingUnit) {
     if (isDashboardWorkflow(value)) {
       this.type = EntityType.Workflow;
       this.id = value.workflow.wid;
@@ -133,13 +125,13 @@ export class DashboardEntry {
       this.isLiked = false;
       this.accessibleUserIds = [];
       this.coverImageUrl = value.dataset.coverImage;
-    } else if (isDashboardWorkflowTemplate(value)) {
-      this.type = EntityType.WorkflowTemplate;
-      this.id = value.workflowTemplate.tid;
-      this.name = value.workflowTemplate.name;
-      this.description = value.workflowTemplate.description;
-      this.creationTime = value.workflowTemplate.creationTime;
-      this.lastModifiedTime = value.workflowTemplate.lastModifiedTime;
+    } else if (isDashboardTemplate(value)) {
+      this.type = EntityType.Template;
+      this.id = value.template.tid;
+      this.name = value.template.name;
+      this.description = value.template.description;
+      this.creationTime = value.template.creationTime;
+      this.lastModifiedTime = value.template.lastModifiedTime;
       this.accessLevel = value.accessLevel;
       this.ownerName = value.ownerName;
       this.ownerEmail = "";
@@ -224,9 +216,9 @@ export class DashboardEntry {
     return this.value;
   }
 
-  get workflowTemplate(): DashboardWorkflowTemplate {
-    if (!isDashboardWorkflowTemplate(this.value)) {
-      throw new Error("Value is not of type DashboardWorkflowTemplate.");
+  get template(): DashboardTemplate {
+    if (!isDashboardTemplate(this.value)) {
+      throw new Error("Value is not of type DashboardTemplate.");
     }
     return this.value;
   }

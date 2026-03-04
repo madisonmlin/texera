@@ -35,7 +35,7 @@ import {
 } from "../../../hub/service/hub.service";
 import {map, switchMap} from "rxjs/operators";
 import {WorkflowPersistService} from "../../../common/service/workflow-persist/workflow-persist.service";
-import {WorkflowTemplateService} from "./workflow-template/workflow-template.service";
+import {TemplateService} from "./template/template.service";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
 const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/publicSearch";
@@ -50,7 +50,7 @@ export class SearchService {
     private http: HttpClient,
     private hubService: HubService,
     private workflowPersistService: WorkflowPersistService,
-    private workflowTemplateService: WorkflowTemplateService,
+    private templateService: TemplateService,
   ) {}
 
   /**
@@ -75,7 +75,7 @@ export class SearchService {
     params: SearchFilterParameters,
     start: number,
     count: number,
-    type: "workflow" | "project" | "file" | "dataset" | "workflowTemplate" | null,
+    type: "workflow" | "project" | "file" | "dataset" | "template" | null,
     orderBy: SortMethod,
     isLogin: boolean,
     includePublic: boolean = false
@@ -127,7 +127,7 @@ export class SearchService {
     params: SearchFilterParameters,
     start: number,
     count: number,
-    type: "workflow" | "project" | "dataset" | "file" | "workflowTemplate" | null,
+    type: "workflow" | "project" | "dataset" | "file" | "template" | null,
     orderBy: SortMethod,
     isLogin: boolean,
     includePublic: boolean
@@ -138,7 +138,7 @@ export class SearchService {
         const filteredResults =
           type === "dataset" ? results.results.filter(i => i !== null && i.dataset != null) : results.results;
 
-        const activities = type === "workflowTemplate" ? (["access", "size"] as EnrichActivity[]) : [];
+        const activities = type === "template" ? (["access", "size"] as EnrichActivity[]) : [];
         return this.extendSearchResultsWithHubActivityInfo(filteredResults, isLogin, activities).pipe(
           map(entries => ({
             entries,
@@ -176,7 +176,7 @@ export class SearchService {
       if (i.project) userIds.add(i.project.ownerId);
       else if (i.workflow) userIds.add(i.workflow.ownerId);
       else if (i.dataset?.dataset?.ownerUid != null) userIds.add(i.dataset.dataset.ownerUid);
-      else if (i.workflowTemplate?.ownerId != null) userIds.add(i.workflowTemplate.ownerId);
+      else if (i.template?.ownerId != null) userIds.add(i.template.ownerId);
     });
     const userInfo$ = userIds.size ? this.getUserInfo(Array.from(userIds)) : of({} as Record<number, UserInfo>);
 
@@ -192,9 +192,9 @@ export class SearchService {
       } else if (i.dataset?.dataset?.did != null) {
         entityTypes.push(EntityType.Dataset);
         entityIds.push(i.dataset.dataset.did);
-      } else if (i.workflowTemplate?.workflowTemplate?.tid != null) {
-        entityTypes.push(EntityType.WorkflowTemplate);
-        entityIds.push(i.workflowTemplate.workflowTemplate.tid);
+      } else if (i.template?.template?.tid != null) {
+        entityTypes.push(EntityType.Template);
+        entityIds.push(i.template.template.tid);
       }
     });
 
@@ -210,12 +210,12 @@ export class SearchService {
         : of([] as AccessResponse[]);
 
     const workflowIds = items.map(i => i.workflow?.workflow?.wid).filter((wid): wid is number => wid != null);
-    const workflowTemplateIds = items.map(i => i.workflowTemplate?.workflowTemplate?.tid).filter((tid): tid is number => tid != null);
+    const templateIds = items.map(i => i.template?.template?.tid).filter((tid): tid is number => tid != null);
     const sizes$ =
       doSize && workflowIds.length > 0
         ? this.workflowPersistService.getSizes(workflowIds)
-        : doSize && workflowTemplateIds.length > 0
-          ? this.workflowTemplateService.getSizes(workflowTemplateIds)
+        : doSize && templateIds.length > 0
+          ? this.templateService.getSizes(templateIds)
           : of({} as Record<number, number>);
 
     return forkJoin([userInfo$, counts$, liked$, access$, sizes$]).pipe(
@@ -236,7 +236,7 @@ export class SearchService {
               ? new DashboardEntry(i.project)
               : i.dataset
                 ? new DashboardEntry(i.dataset)
-                : new DashboardEntry(i.workflowTemplate!);
+                : new DashboardEntry(i.template!);
 
           const key = `${entry.type}:${entry.id}`;
           const ownerId = i.workflow
@@ -245,7 +245,7 @@ export class SearchService {
               ? i.project.ownerId
               : i.dataset
                 ? i.dataset!.dataset!.ownerUid!
-                : i.workflowTemplate!.ownerId!;
+                : i.template!.ownerId!;
           const ui = (userMap as any)[ownerId];
           if (ui) {
             entry.setOwnerName(ui.userName);
@@ -263,7 +263,7 @@ export class SearchService {
             entry.setAccessUsers(accessMap[key] ?? []);
           }
 
-          if (doSize && (entry.type === EntityType.Workflow || entry.type === EntityType.WorkflowTemplate) && entry.id != null) {
+          if (doSize && (entry.type === EntityType.Workflow || entry.type === EntityType.Template) && entry.id != null) {
             entry.setSize(sizesMap[entry.id] ?? 0);
           }
           return entry;

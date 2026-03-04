@@ -9,7 +9,7 @@ import org.apache.texera.dao.jooq.generated.tables.daos.WorkflowOfTemplateDao
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.{POST, Path, Produces, QueryParam}
-import org.apache.texera.web.service.{WorkflowCreationService, WorkflowTemplateService}
+import org.apache.texera.web.service.{WorkflowCreationService, TemplateService}
 import org.apache.texera.dao.jooq.generated.tables.pojos._
 import org.apache.texera.web.resource.dashboard.user.templated_workflow.TemplatedWorkflowResource._
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -66,7 +66,7 @@ class TemplatedWorkflowResource extends LazyLogging{
     .getInstance()
     .createDSLContext()
 
-  private val workflowTemplateService = new WorkflowTemplateService(context)
+  private val templateService = new TemplateService(context)
   private val workflowCreationService = new WorkflowCreationService(context)
 
   @POST
@@ -76,9 +76,9 @@ class TemplatedWorkflowResource extends LazyLogging{
                               @QueryParam("tid")tid: Integer,
                               request: BuildTemplatedWorkflowRequest,
                               @Auth user: SessionUser): Integer = {
-    val template = workflowTemplateService.retrieveWorkflowTemplate(tid);
+    val template = templateService.retrieveTemplate(tid);
     val content = applyParameters(template.content, request.parameters);
-    val workflow_template = new Workflow(
+    val templated_workflow = new Workflow(
       null,                                // wid
       template.name,                       // name
       template.description,                // description
@@ -87,7 +87,7 @@ class TemplatedWorkflowResource extends LazyLogging{
       null,                                // lastModifiedTime
       false                                // isPublic
     )
-    val workflow = workflowCreationService.createWorkflow(workflow_template, user);
+    val workflow = workflowCreationService.createWorkflow(templated_workflow, user);
     val wid = workflow.workflow.getWid;
     val mapper = new ObjectMapper().registerModule(DefaultScalaModule);
     val parameters = mapper.writeValueAsString(request.parameters);

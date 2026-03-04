@@ -74,7 +74,7 @@ object UnifiedResourceSchema {
       isDatasetDownloadable: Field[java.lang.Boolean] = DSL.cast(null, classOf[java.lang.Boolean]),
       datasetUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
       tid: Field[Integer] = DSL.cast(null, classOf[Integer]),
-      workflowTemplateUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
+      templateUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
   ): UnifiedResourceSchema = {
     new UnifiedResourceSchema(
       Seq(
@@ -100,7 +100,7 @@ object UnifiedResourceSchema {
         isDatasetDownloadable -> isDatasetDownloadable.as("is_dataset_downloadable"),
         datasetUserAccess -> datasetUserAccess.as("user_dataset_access"),
         tid -> tid.as("tid"),
-        workflowTemplateUserAccess -> workflowTemplateUserAccess.as("workflow_template_privilege"),
+        templateUserAccess -> templateUserAccess.as("template_privilege"),
       )
     )
   }
@@ -145,8 +145,8 @@ object UnifiedResourceSchema {
   * - `isDatasetDownloadable`: Indicates if the dataset is downloadable, as a `Boolean`.
   * - `datasetUserAccess`: Access privileges for the dataset, as a `PrivilegeEnum`
   *
-  * Attributes specific to workflow templates:
-  * - `tid`: Workflow Template ID, as an `Integer`.
+  * Attributes specific to templates:
+  * - `tid`: Template ID, as an `Integer`.
   */
 class UnifiedResourceSchema private (
     fieldMappingSeq: Seq[(Field[_], Field[_])]

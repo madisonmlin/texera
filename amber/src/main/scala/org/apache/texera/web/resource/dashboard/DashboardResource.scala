@@ -27,7 +27,7 @@ import org.apache.texera.web.resource.dashboard.DashboardResource._
 import org.apache.texera.web.resource.dashboard.SearchQueryBuilder.{ALL_RESOURCE_TYPE, context}
 import org.apache.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
-import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource.DashboardWorkflowTemplate
+import org.apache.texera.web.resource.dashboard.user.template.TemplateResource.DashboardTemplate
 import org.jooq.{Field, OrderField}
 
 import java.util
@@ -41,7 +41,7 @@ object DashboardResource {
       workflow: Option[DashboardWorkflow] = None,
       project: Option[Project] = None,
       dataset: Option[DashboardDataset] = None,
-      workflowTemplate: Option[DashboardWorkflowTemplate] = None,
+      template: Option[DashboardTemplate] = None,
   )
 
   case class UserInfo(userId: Integer, userName: String, googleAvatar: Option[String])
@@ -81,7 +81,7 @@ object DashboardResource {
       @QueryParam("operator") operators: java.util.List[String] = new util.ArrayList(),
       @QueryParam("projectId") projectIds: java.util.List[Integer] = new util.ArrayList(),
       @QueryParam("datasetId") datasetIds: java.util.List[Integer] = new util.ArrayList(),
-      @QueryParam("workflowTemplateId") workflowTemplateIds: java.util.List[Integer] = new util.ArrayList(),
+      @QueryParam("templateId") templateIds: java.util.List[Integer] = new util.ArrayList(),
       @QueryParam("start") @DefaultValue("0") offset: Int = 0,
       @QueryParam("count") @DefaultValue("20") count: Int = 20,
       @QueryParam("orderBy") @DefaultValue("EditTimeDesc") orderBy: String = "EditTimeDesc"
@@ -102,13 +102,13 @@ object DashboardResource {
         ProjectSearchQueryBuilder.constructQuery(uid, params, includePublic)
       case SearchQueryBuilder.DATASET_RESOURCE_TYPE =>
         DatasetSearchQueryBuilder.constructQuery(uid, params, includePublic)
-      case SearchQueryBuilder.WORKFLOW_TEMPLATE_RESOURCE_TYPE =>
-        WorkflowTemplateSearchQueryBuilder.constructQuery(uid, params, includePublic)
+      case SearchQueryBuilder.TEMPLATE_RESOURCE_TYPE =>
+        TemplateSearchQueryBuilder.constructQuery(uid, params, includePublic)
       case SearchQueryBuilder.ALL_RESOURCE_TYPE =>
         val q1 = WorkflowSearchQueryBuilder.constructQuery(uid, params, includePublic)
         val q3 = ProjectSearchQueryBuilder.constructQuery(uid, params, includePublic)
         val q4 = DatasetSearchQueryBuilder.constructQuery(uid, params, includePublic)
-        val q5 = WorkflowTemplateSearchQueryBuilder.constructQuery(uid, params, includePublic)
+        val q5 = TemplateSearchQueryBuilder.constructQuery(uid, params, includePublic)
         q1.unionAll(q3).unionAll(q4).unionAll(q5)
       case _ => throw new IllegalArgumentException(s"Unknown resource type: ${params.resourceType}")
     }
@@ -128,8 +128,8 @@ object DashboardResource {
             ProjectSearchQueryBuilder.toEntry(uid, record)
           case SearchQueryBuilder.DATASET_RESOURCE_TYPE =>
             DatasetSearchQueryBuilder.toEntry(uid, record)
-          case SearchQueryBuilder.WORKFLOW_TEMPLATE_RESOURCE_TYPE =>
-            WorkflowTemplateSearchQueryBuilder.toEntry(uid, record)
+          case SearchQueryBuilder.TEMPLATE_RESOURCE_TYPE =>
+            TemplateSearchQueryBuilder.toEntry(uid, record)
         }
       })
 

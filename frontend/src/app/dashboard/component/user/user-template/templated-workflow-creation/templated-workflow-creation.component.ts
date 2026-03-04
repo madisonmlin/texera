@@ -21,37 +21,30 @@ import { FormlyFieldConfig } from "@ngx-formly/core";
 import { FormGroup, FormControl } from "@angular/forms";
 import {AfterViewInit, Component, OnInit} from "@angular/core";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {NzModalService} from "ng-zorro-antd/modal";
 import {NotificationService} from "../../../../../common/service/notification/notification.service";
 import {UserService} from "../../../../../common/service/user/user.service";
 import {WorkflowActionService} from "../../../../../workspace/service/workflow-graph/model/workflow-action.service";
 import {ExecuteWorkflowService} from "../../../../../workspace/service/execute-workflow/execute-workflow.service";
 import {Workflow, WorkflowContent} from "../../../../../common/type/workflow";
 import {OperatorMetadataService} from "../../../../../workspace/service/operator-metadata/operator-metadata.service";
-import {ResultExportationComponent} from "../../../../../workspace/component/result-exportation/result-exportation.component";
 import {ComputingUnitStatusService} from "../../../../../workspace/service/computing-unit-status/computing-unit-status.service";
-import {DashboardWorkflowComputingUnit} from "../../../../../workspace/types/workflow-computing-unit";
-import {extractErrorMessage} from "../../../../../common/util/error";
 import {WorkflowComputingUnitManagingService} from "../../../../../workspace/service/workflow-computing-unit/workflow-computing-unit-managing.service";
 import {WorkflowPersistService} from "../../../../../common/service/workflow-persist/workflow-persist.service";
 import {AppSettings} from "../../../../../common/app-setting";
-import {WorkflowResultDownloadabilityResponse} from "../../../../service/user/download/download.service";
 import {HttpClient} from "@angular/common/http";
-import {TOKEN_KEY} from "../../../../../common/service/user/auth.service";
-import {ShareAccessService} from "../../../../service/user/share-access/share-access.service";
 import {isEqual} from "lodash-es";
 import {map, Observable, of, tap} from "rxjs";
 import {cloneDeep} from "lodash";
-import {WorkflowTemplate} from "../../../../../common/type/workflow-template";
+import {Template} from "../../../../../common/type/template";
 import {switchMap} from "rxjs/operators";
 import {ActivatedRoute} from "@angular/router";
 
 @UntilDestroy()
 @Component({
-  templateUrl: "./scgpt-job-creation.component.html",
-  styleUrls: ["./scgpt-job-creation.component.scss"]
+  templateUrl: "./templated-workflow-creation.component.html",
+  styleUrls: ["./templated-workflow-creation.component.scss"]
 })
-export class ScGPTJobCreationComponent implements AfterViewInit, OnInit {
+export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit {
   public tid: number | undefined;
   public wid: number | undefined;
   public template: WorkflowContent | undefined;
@@ -157,10 +150,10 @@ export class ScGPTJobCreationComponent implements AfterViewInit, OnInit {
     })
   }
 
-  // move to workflow-template.service.ts
+  // move to template.service.ts
   private getWorkflowTemplateContent(): Observable<WorkflowContent> {
-    return this.http.get<WorkflowTemplate>(
-      `${AppSettings.getApiEndpoint()}/workflow-template/${this.tid}`
+    return this.http.get<Template>(
+      `${AppSettings.getApiEndpoint()}/template/${this.tid}`
     ).pipe(
       map(template => JSON.parse(template.content))
     );
@@ -218,7 +211,7 @@ export class ScGPTJobCreationComponent implements AfterViewInit, OnInit {
           this.template = response;
           this.operatorIndexToId = response.operators.map(op => op.operatorID);
           this.operatorIndexToForm = response.operators.map(op => cloneDeep(op.operatorProperties))
-          // create formly fields based on workflow template operator parameters (operator, parameter name, field type, props)
+          // create formly fields based on template operator parameters (operator, parameter name, field type, props)
         }
       )
   }

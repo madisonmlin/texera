@@ -50,7 +50,7 @@ import {
   DASHBOARD_USER_DATASET,
   DASHBOARD_USER_PROJECT,
   DASHBOARD_USER_WORKSPACE,
-  DASHBOARD_USER_WORKFLOW_TEMPLATE,
+  DASHBOARD_USER_TEMPLATE,
 } from "../../../../app-routing.constant";
 import { isDefined } from "../../../../common/util/predicate";
 
@@ -139,11 +139,11 @@ export class ListItemComponent implements OnChanges {
         this.iconType = "database";
         this.size = this.entry.size;
       }
-    } else if (this.entry.type === "workflowTemplate") {
+    } else if (this.entry.type === "template") {
       if (typeof this.entry.id === "number") {
-        this.disableDelete = !this.entry.workflowTemplate.isOwner;
+        this.disableDelete = !this.entry.template.isOwner;
         this.owners = this.entry.accessibleUserIds;
-        this.entryLink = [DASHBOARD_USER_WORKFLOW_TEMPLATE, String(this.entry.id)];
+        this.entryLink = [DASHBOARD_USER_TEMPLATE, String(this.entry.id)];
         this.iconType = "experiment";
         this.size = this.entry.size;
       }

@@ -37,7 +37,7 @@ object SearchQueryBuilder {
   val WORKFLOW_RESOURCE_TYPE = "workflow"
   val PROJECT_RESOURCE_TYPE = "project"
   val DATASET_RESOURCE_TYPE = "dataset"
-  val WORKFLOW_TEMPLATE_RESOURCE_TYPE = "workflowTemplate"
+  val TEMPLATE_RESOURCE_TYPE = "template"
   val ALL_RESOURCE_TYPE = ""
 }
 

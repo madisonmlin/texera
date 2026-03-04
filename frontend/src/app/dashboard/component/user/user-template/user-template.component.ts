@@ -18,7 +18,7 @@
  */
 
 import {AfterViewInit, Component, inject, OnInit, ViewChild} from "@angular/core";
-import {DASHBOARD_USER_SCGPT} from "../../../../app-routing.constant";
+import {DASHBOARD_USER_TEMPLATE} from "../../../../app-routing.constant";
 import {NzModalService} from "ng-zorro-antd/modal";
 import {UserService} from "../../../../common/service/user/user.service";
 import {Router} from "@angular/router";
@@ -33,14 +33,14 @@ import {SortMethod} from "../../../type/sort-method";
 import {firstValueFrom} from "rxjs";
 import {map} from "rxjs/operators";
 import workflow from "../../../../../assets/workflow_templates/scGPT_FINAL.json";
-import {WorkflowTemplateService} from "../../../service/user/workflow-template/workflow-template.service";
+import {TemplateService} from "../../../service/user/template/template.service";
 
 @UntilDestroy()
 @Component({
-  templateUrl: "./user-scgpt.component.html",
-  styleUrls: ["./user-scgpt.component.scss"]
+  templateUrl: "./user-template.component.html",
+  styleUrls: ["./user-template.component.scss"]
 })
-export class UserScGPTComponent implements OnInit, AfterViewInit {
+export class UserTemplateComponent implements OnInit, AfterViewInit {
   private _searchResultsComponent?: SearchResultsComponent;
   public isLogin = this.userService.isLogin();
   private includePublic = false;
@@ -76,7 +76,7 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
     private router: Router,
     private searchService: SearchService,
     private datasetService: DatasetService,
-    private workflowTemplateService: WorkflowTemplateService,
+    private templateService: TemplateService,
     private message: NzMessageService
   ) {
     this.userService
@@ -109,7 +109,7 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
             filterParams,
             start,
             count,
-            "workflowTemplate",
+            "template",
             this.sortMethod,
             this.isLogin,
             this.includePublic
@@ -142,7 +142,7 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
     //   isPublished: 0,
     //   readonly: true,
     // }
-    // this.workflowTemplateService.addWorkflowTemplate(newTemplate);
+    // this.templateService.addTemplate(newTemplate);
     this.userService
       .userChanged()
       .pipe(untilDestroyed(this))
@@ -152,15 +152,15 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
   public async onClickDuplicateWorkflowTemplate(entry: DashboardEntry): Promise<void> {}
 
   public deleteWorkflowTemplate(entry: DashboardEntry): void {
-    if (entry.workflowTemplate.workflowTemplate.tid == undefined) {
+    if (entry.template.template.tid == undefined) {
       return;
     }
-    this.workflowTemplateService
-      .deleteWorkflowTemplate([entry.workflowTemplate.workflowTemplate.tid])
+    this.templateService
+      .deleteTemplate([entry.template.template.tid])
       .pipe(untilDestroyed(this))
       .subscribe(_ => {
         this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
-          workflowTemplateEntry => workflowTemplateEntry.workflowTemplate.workflowTemplate.tid !== entry.workflowTemplate.workflowTemplate.tid
+          templateEntry => templateEntry.template.template.tid !== entry.template.template.tid
         );
       });
   }
@@ -170,7 +170,7 @@ export class UserScGPTComponent implements OnInit, AfterViewInit {
   }
 
   public onClickOpenScGPTJobAddComponent(): void {
-    this.router.navigate([`${DASHBOARD_USER_SCGPT}/1`]);
+    this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/1`]);
     return;
   }
 

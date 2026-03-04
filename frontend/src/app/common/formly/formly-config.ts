@@ -29,7 +29,7 @@ import { CollabWrapperComponent } from "./collab-wrapper/collab-wrapper/collab-w
 import { FormlyRepeatDndComponent } from "./repeat-dnd/repeat-dnd.component";
 import {
   WorkflowTemplateSelectionComponent
-} from "../../dashboard/component/user/user-scgpt/workflow-template-select/workflow-template-selection.component";
+} from "../../dashboard/component/user/user-template/workflow-template-select/workflow-template-selection.component";
 
 /**
  * Configuration for using Json Schema with Formly.

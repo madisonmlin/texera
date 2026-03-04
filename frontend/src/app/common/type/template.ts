@@ -17,7 +17,7 @@
  * under the License.
  */
 
-export interface WorkflowTemplate {
+export interface Template {
   name: string;
   description: string | undefined;
   tid: number | undefined,

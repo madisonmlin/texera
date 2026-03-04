@@ -58,7 +58,7 @@ import { UserWorkflowComponent } from "./dashboard/component/user/user-workflow/
 import { ShareAccessComponent } from "./dashboard/component/user/share-access/share-access.component";
 import { WorkflowExecutionHistoryComponent } from "./dashboard/component/user/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
 import { UserQuotaComponent } from "./dashboard/component/user/user-quota/user-quota.component";
-import { UserScGPTComponent } from "./dashboard/component/user/user-scgpt/user-scgpt.component";
+import { UserTemplateComponent } from "./dashboard/component/user/user-template/user-template.component";
 import { UserIconComponent } from "./dashboard/component/user/user-icon/user-icon.component";
 import { UserAvatarComponent } from "./dashboard/component/user/user-avatar/user-avatar.component";
 import { CodeEditorComponent } from "./workspace/component/code-editor-dialog/code-editor.component";
@@ -189,9 +189,10 @@ import { MarkdownDescriptionComponent } from "./dashboard/component/user/markdow
 import { UserComputingUnitComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit.component";
 import { UserComputingUnitListItemComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit-list-item/user-computing-unit-list-item.component";
 import { ScGPTJobCreationComponent } from "./dashboard/component/user/user-scgpt/scgpt-job-creation/scgpt-job-creation.component";
+import { TemplatedWorkflowCreationComponent } from "./dashboard/component/user/user-template/templated-workflow-creation/templated-workflow-creation.component";
 import {
   WorkflowTemplateSelectionComponent
-} from "./dashboard/component/user/user-scgpt/workflow-template-select/workflow-template-selection.component";
+} from "./dashboard/component/user/user-template/workflow-template-select/workflow-template-selection.component";
 
 registerLocaleData(en);
 
@@ -220,8 +221,8 @@ registerLocaleData(en);
     LocalLoginComponent,
     UserWorkflowComponent,
     UserQuotaComponent,
-    UserScGPTComponent,
-    ScGPTJobCreationComponent,
+    UserTemplateComponent,
+    TemplatedWorkflowCreationComponent,
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,

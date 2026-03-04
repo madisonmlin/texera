@@ -17,12 +17,12 @@
  * under the License.
  */
 
-import {WorkflowTemplate} from "../../common/type/workflow-template";
+import {Template} from "../../common/type/template";
 
-export interface DashboardWorkflowTemplate {
+export interface DashboardTemplate {
   isOwner: boolean;
   ownerName: string | undefined;
-  workflowTemplate: WorkflowTemplate;
+  template: Template;
   accessLevel: "READ" | "WRITE" | "NONE";
   ownerId: number;
 }

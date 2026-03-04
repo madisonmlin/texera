@@ -47,7 +47,7 @@ import org.apache.texera.web.resource.dashboard.user.project.{
 }
 import org.apache.texera.web.resource.dashboard.user.quota.UserQuotaResource
 import org.apache.texera.web.resource.dashboard.user.workflow.{WorkflowAccessResource, WorkflowExecutionsResource, WorkflowResource, WorkflowVersionResource}
-import org.apache.texera.web.resource.dashboard.user.workflow_template.WorkflowTemplateResource
+import org.apache.texera.web.resource.dashboard.user.template.TemplateResource
 import org.apache.texera.web.resource.dashboard.user.templated_workflow.TemplatedWorkflowResource
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlet.{ErrorPageErrorHandler, FilterHolder}
@@ -145,7 +145,7 @@ class TexeraWebApplication
     environment.jersey.register(classOf[PublicProjectResource])
     environment.jersey.register(classOf[WorkflowAccessResource])
     environment.jersey.register(classOf[WorkflowResource])
-    environment.jersey.register(classOf[WorkflowTemplateResource])
+    environment.jersey.register(classOf[TemplateResource])
     environment.jersey.register(classOf[TemplatedWorkflowResource])
     environment.jersey.register(classOf[HubResource])
     environment.jersey.register(classOf[UserResource])

@@ -1,9 +1,9 @@
 import {Component} from "@angular/core";
 import { FieldType, FieldTypeConfig } from "@ngx-formly/core";
 import {Observable} from "rxjs";
-import {WorkflowTemplateService} from "../../../../service/user/workflow-template/workflow-template.service";
+import {TemplateService} from "../../../../service/user/template/template.service";
 import {UntilDestroy} from "@ngneat/until-destroy";
-import {WorkflowTemplate} from "../../../../../common/type/workflow-template";
+import {Template} from "../../../../../common/type/template";
 
 import workflow from "../../../../../../assets/workflow_templates/scGPT_FINAL.json";
 
@@ -17,12 +17,12 @@ import workflow from "../../../../../../assets/workflow_templates/scGPT_FINAL.js
 export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfig> {
   templateOptions$: Observable<{ tid: string; name: string }[]> | undefined;
 
-  constructor(private templateService: WorkflowTemplateService) {
+  constructor(private templateService: TemplateService) {
     super();
   }
 
   ngOnInit() {
-    // const newTemplate: WorkflowTemplate = {
+    // const newTemplate: Template = {
     //   tid: 0,
     //   name: "CSV Workflow",
     //   description: "Workflow with single CSV operator",
@@ -72,7 +72,7 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
     //   readonly: true,
     // };
     //
-    // this.templateService.addWorkflowTemplate(newTemplate);
+    // this.templateService.addTemplate(newTemplate);
     //
     //
     // console.log(workflow);
@@ -89,10 +89,10 @@ export class WorkflowTemplateSelectionComponent extends FieldType<FieldTypeConfi
     //   isPublished: 0,
     //   readonly: true,
     // }
-    // this.templateService.addWorkflowTemplate(newTemplate);
+    // this.templateService.addTemplate(newTemplate);
 
 
-    this.templateOptions$ = this.templateService.getWorkflowTemplate();
+    this.templateOptions$ = this.templateService.getTemplate();
     this.props.options = this.templateOptions$;
   }
 }
