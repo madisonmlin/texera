@@ -32,11 +32,29 @@
 <!--          nzTheme="outline"></i>-->
 <!--        <span>Create Workflow from Template</span>-->
 <!--      </button>-->
+      <nz-button-group
+        class="utility-button-group"
+        ngbDropdown>
+        <texera-sort-button (sortMethodChange)="sortMethod = $event; search()"></texera-sort-button>
+        <nz-upload [nzBeforeUpload]="onClickUploadExistingTemplateFromLocal">
+          <button
+            nz-button
+            title="Upload ZIP/JSON file as template"
+            nz-tooltip="Upload ZIP/JSON file as template"
+            nzTooltipPlacement="bottom"
+            type="button">
+            <i
+              nz-icon
+              nzType="cloud-upload"
+              nzTheme="outline"></i>
+          </button>
+        </nz-upload>
+      </nz-button-group>
       <texera-filters #filters></texera-filters>
     </div>
   </nz-card>
 
-  <div class="section-search-bar workflow-template-search-bar">
+  <div class="section-search-bar template-search-bar">
     <texera-filters-instructions></texera-filters-instructions>
     <nz-select
       #searchInput
@@ -55,9 +73,9 @@
   <texera-search-results
     [editable]="true"
     [isPrivateSearch]="true"
-    (deleted)="deleteWorkflowTemplate($event)"
+    (deleted)="deleteTemplate($event)"
     (refresh)="refreshSearchResult()"
-    (duplicated)="onClickDuplicateWorkflowTemplate($event)"
+    (duplicated)="onClickDuplicateTemplate($event)"
     [currentUid]="currentUid"
     (notifyWorkflow)="updateTooltip()"></texera-search-results>
 </div>

@@ -30,10 +30,15 @@ import {DashboardEntry} from "../../../type/dashboard-entry";
 import {SearchResultsComponent} from "../search-results/search-results.component";
 import {FiltersComponent} from "../filters/filters.component";
 import {SortMethod} from "../../../type/sort-method";
-import {firstValueFrom} from "rxjs";
-import {map} from "rxjs/operators";
+import {firstValueFrom, from, lastValueFrom, Observable, of} from "rxjs";
+import {map, switchMap, tap} from "rxjs/operators";
 import workflow from "../../../../../assets/workflow_templates/scGPT_FINAL.json";
-import {TemplateService} from "../../../service/user/template/template.service";
+import {DEFAULT_TEMPLATE_NAME, TemplateService} from "../../../service/user/template/template.service";
+import {NzUploadFile} from "ng-zorro-antd/upload";
+import {NotificationService} from "../../../../common/service/notification/notification.service";
+import {WorkflowContent} from "../../../../common/type/workflow";
+import {DEFAULT_WORKFLOW_NAME} from "../../../../common/service/workflow-persist/workflow-persist.service";
+import JSZip from "jszip";
 
 @UntilDestroy()
 @Component({
@@ -73,6 +78,7 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
   constructor(
     private modalService: NzModalService,
     private userService: UserService,
+    private notificationService: NotificationService,
     private router: Router,
     private searchService: SearchService,
     private datasetService: DatasetService,
@@ -129,29 +135,28 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // const newTemplate = {
-    //   tid: undefined,
-    //   name: "scGPT_FINAL",
-    //   description: "",
-    //   content: JSON.stringify(workflow),
-    //   configurableParameters: JSON.stringify({
-    //     "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": ["textInput"],
-    //   }),
-    //   creationTime: undefined,
-    //   lastModifiedTime: undefined,
-    //   isPublished: 0,
-    //   readonly: true,
-    // }
-    // this.templateService.addTemplate(newTemplate);
+    // const templateName = "new-scGPT_FINAL"
+    // const templateContent = JSON.parse(JSON.stringify(workflow)) as WorkflowContent
+    // const templateConfigurableParameters = JSON.stringify({
+    //   "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": ["textInput"]
+    // })
+    // this.templateService.createTemplate(templateContent, templateName, templateConfigurableParameters).pipe(untilDestroyed(this))
+    //       .subscribe(() => {
+    //         this.userService
+    //           .userChanged()
+    //           .pipe(untilDestroyed(this))
+    //           .subscribe(() => this.search());
+    //       });
+
     this.userService
       .userChanged()
       .pipe(untilDestroyed(this))
       .subscribe(() => this.search());
   }
 
-  public async onClickDuplicateWorkflowTemplate(entry: DashboardEntry): Promise<void> {}
+  public async onClickDuplicateTemplate(entry: DashboardEntry): Promise<void> {}
 
-  public deleteWorkflowTemplate(entry: DashboardEntry): void {
+  public deleteTemplate(entry: DashboardEntry): void {
     if (entry.template.template.tid == undefined) {
       return;
     }
@@ -163,6 +168,83 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
           templateEntry => templateEntry.template.template.tid !== entry.template.template.tid
         );
       });
+  }
+
+  public onClickUploadExistingTemplateFromLocal = (file: NzUploadFile): Observable<boolean> => {
+    const fileExtensionIndex = file.name.lastIndexOf(".");
+
+    let upload$: Observable<void>;
+    if (file.name.substring(fileExtensionIndex) === ".zip") {
+      upload$ = this.handleZipUploads(file as unknown as Blob);
+    } else {
+      upload$ = this.handleFileUploads(file as unknown as Blob, file.name);
+    }
+
+    return upload$.pipe(
+      switchMap(() => from(this.search(true))),
+      tap(() => this.notificationService.success("Upload Successful")),
+      switchMap(() => of(false))
+    );
+  };
+
+  private handleZipUploads(zipFile: Blob): Observable<void> {
+    let zip = new JSZip();
+    return from(zip.loadAsync(zipFile)).pipe(
+      switchMap(zip =>
+        from(
+          Promise.all(
+            Object.keys(zip.files).map(relativePath =>
+              zip.files[relativePath]
+                .async("blob")
+                .then(content => lastValueFrom(this.handleFileUploads(content, relativePath)))
+            )
+          )
+        )
+      ),
+      map(() => undefined)
+    );
+  }
+
+  private handleFileUploads(file: Blob, name: string): Observable<void> {
+    return new Observable<void>(observer => {
+      let reader = new FileReader();
+      reader.readAsText(file);
+      reader.onload = () => {
+        try {
+          const result = reader.result;
+          if (typeof result !== "string") {
+            throw new Error("Incorrect format: file is not a string");
+          }
+          const templateContent = JSON.parse(result) as WorkflowContent;
+          const fileExtensionIndex = name.lastIndexOf(".");
+          let templateName = fileExtensionIndex === -1 ? name : name.substring(0, fileExtensionIndex);
+          if (templateName.trim() === "") {
+            templateName = DEFAULT_TEMPLATE_NAME;
+          }
+          this.templateService
+            .createTemplate(templateContent, templateName)
+            .pipe(untilDestroyed(this))
+            .subscribe({
+              next: uploadedTemplate => {
+                this.searchResultsComponent.entries = [
+                  ...this.searchResultsComponent.entries,
+                  new DashboardEntry(uploadedTemplate),
+                ];
+                observer.next();
+                observer.complete();
+              },
+              error: (err: unknown) => {
+                observer.error(err);
+              },
+            });
+        } catch (error) {
+          this.notificationService.error(
+            "An error occurred when importing the template. Please import a template json file."
+          );
+          observer.error(error);
+        }
+      };
+    });
   }
 
   ngOnInit(): void {

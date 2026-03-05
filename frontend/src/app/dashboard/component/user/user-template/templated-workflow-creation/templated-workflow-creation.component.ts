@@ -151,11 +151,11 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
   }
 
   // move to template.service.ts
-  private getWorkflowTemplateContent(): Observable<WorkflowContent> {
+  private getTemplateContent(): Observable<WorkflowContent> {
     return this.http.get<Template>(
       `${AppSettings.getApiEndpoint()}/template/${this.tid}`
     ).pipe(
-      map(template => JSON.parse(template.content))
+      map(template => template.content)
     );
   }
 
@@ -204,7 +204,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
 
   ngAfterViewInit(): void {
     this.tid = this.route.snapshot.params.tid;
-    this.getWorkflowTemplateContent()
+    this.getTemplateContent()
       .pipe(untilDestroyed(this))
       .subscribe(
         (response) => {

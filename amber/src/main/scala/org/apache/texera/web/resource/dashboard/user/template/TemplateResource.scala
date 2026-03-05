@@ -67,19 +67,27 @@ class TemplateResource extends LazyLogging {
 
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
-  @Path("/add")
-  def addTemplate(template: Template, @Auth sessionUser: SessionUser): Unit = {
+  @Path("/create")
+  def createTemplate(template: Template, @Auth sessionUser: SessionUser): DashboardTemplate = {
+    val user = sessionUser.getUser
     if (template.getTid != null) {
       throw new BadRequestException("Cannot create a new template with a provided id.")
     }
     templateDao.insert(template)
-    templateOfUserDao.insert(new TemplateOfUser(sessionUser.getUid, template.getTid))
+    templateOfUserDao.insert(new TemplateOfUser(user.getUid, template.getTid))
     templateUserAccessDao.insert(
       new TemplateUserAccess(
-        sessionUser.getUid,
+        user.getUid,
         template.getTid,
         PrivilegeEnum.READ
       )
+    )
+    DashboardTemplate(
+      isOwner = true,
+      user.getName,
+      templateDao.fetchOneByTid(template.getTid),
+      PrivilegeEnum.WRITE.toString,
+      user.getUid
     )
   }
 

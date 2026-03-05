@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+import {WorkflowContent} from "./workflow";
 
 export interface Template {
   name: string;
@@ -25,6 +26,6 @@ export interface Template {
   lastModifiedTime: number | undefined;
   isPublished: number;
   readonly: boolean;
-  content: string;
+  content: WorkflowContent;
   configurableParameters: string;
 }

@@ -3,13 +3,19 @@ import {HttpClient, HttpParams} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {AppSettings} from "../../../../common/app-setting";
 import {Template} from "../../../../common/type/template";
-import {WORKFLOW_DELETE_URL, WORKFLOW_SIZE} from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {WorkflowContent} from "../../../../common/type/workflow";
+import {DEFAULT_WORKFLOW_NAME} from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {DashboardWorkflow} from "../../../type/dashboard-workflow.interface";
+import {filter} from "rxjs/operators";
+import {DashboardTemplate} from "../../../type/dashboard-template.interface";
 
 export const TEMPLATE_BASE_URL = "template";
-export const TEMPLATE_ADD_URL = TEMPLATE_BASE_URL + "/add";
+export const TEMPLATE_CREATE_URL = TEMPLATE_BASE_URL + "/create";
 export const TEMPLATE_LIST_URL = TEMPLATE_BASE_URL + "/list";
 export const TEMPLATE_DELETE_URL = TEMPLATE_BASE_URL + "/delete";
 export const TEMPLATE_SIZE = TEMPLATE_BASE_URL + "/size";
+
+export const DEFAULT_TEMPLATE_NAME = "Untitled template";
 
 @Injectable({
   providedIn: "root",
@@ -17,16 +23,18 @@ export const TEMPLATE_SIZE = TEMPLATE_BASE_URL + "/size";
 export class TemplateService {
   constructor(private http: HttpClient) {}
 
-  public addTemplate(template: Template): void {
-    this.http.post<void>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_ADD_URL}`, {
-      name: template.name,
-      description: template.description,
-      content: template.content,
-      configurableParameters: template.configurableParameters,
-    }).subscribe({
-      next: () => console.log('Template added successfully'),
-      error: err => console.error('Failed to add template', err)
-    });
+  public createTemplate(
+    newTemplateContent: WorkflowContent,
+    newTemplateName: string = DEFAULT_TEMPLATE_NAME,
+    newTemplateConfigurableParameters: string = "",
+  ): Observable<DashboardTemplate> {
+    return this.http
+      .post<DashboardTemplate>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_CREATE_URL}`, {
+      name: newTemplateName,
+      content: JSON.stringify(newTemplateContent),
+      configurableParameters: newTemplateConfigurableParameters,
+      })
+      .pipe(filter((createdTemplate: DashboardTemplate) => createdTemplate != null));
   }
 
   public getTemplate(): Observable<{ tid: string, name: string }[]> {
