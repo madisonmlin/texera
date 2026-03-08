@@ -20,3 +20,8 @@
 @import "../../dashboard.component.scss";
 @import "../../section-style";
 @import "../../button-style";
+
+::ng-deep .ant-badge-dot {
+  right: 8px;
+  top: 5px;
+}

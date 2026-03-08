@@ -39,6 +39,7 @@ import {NotificationService} from "../../../../common/service/notification/notif
 import {WorkflowContent} from "../../../../common/type/workflow";
 import {DEFAULT_WORKFLOW_NAME} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import JSZip from "jszip";
+import {DownloadService} from "../../../service/user/download/download.service";
 
 @UntilDestroy()
 @Component({
@@ -80,6 +81,7 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
     private userService: UserService,
     private notificationService: NotificationService,
     private router: Router,
+    private downloadService: DownloadService,
     private searchService: SearchService,
     private datasetService: DatasetService,
     private templateService: TemplateService,
@@ -92,6 +94,14 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
         this.isLogin = this.userService.isLogin();
         this.currentUid = this.userService.getCurrentUser()?.uid;
       });
+  }
+
+  public multiTemplatesOperationButtonEnabled(): boolean {
+    if (this._searchResultsComponent) {
+      return this.searchResultsComponent?.entries.filter(i => i.checked).length > 0;
+    } else {
+      return false;
+    }
   }
 
   async search(forced: Boolean = false): Promise<void> {
@@ -247,6 +257,28 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
     });
   }
 
+  public onClickOpenDownloadZip(): void {
+    const checkedEntries = this.searchResultsComponent.entries.filter(i => i.checked);
+    if (checkedEntries.length === 0) {
+      return;
+    }
+
+    const templateEntries = checkedEntries.map(entry => ({
+      id: entry.template.template.tid!,
+      name: entry.template.template.name,
+    }));
+
+    this.downloadService
+      .downloadTemplatesAsZip(templateEntries)
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: () => {
+          // this.searchResultsComponent.clearAllSelections();
+        },
+        error: (err: unknown) => console.error("Error downloading templates:", err),
+      });
+  }
+
   ngOnInit(): void {
     return;
   }
@@ -254,6 +286,17 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
   public onClickOpenScGPTJobAddComponent(): void {
     this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/1`]);
     return;
+  }
+
+  public toggleSelection(): void {
+    const allSelected = this.searchResultsComponent.entries.every(entry => entry.checked);
+    if (allSelected) {
+      this.searchResultsComponent.clearAllSelections();
+      this.updateTooltip();
+    } else {
+      this.searchResultsComponent.selectAll();
+      this.updateTooltip();
+    }
   }
 
   public refreshSearchResult() {

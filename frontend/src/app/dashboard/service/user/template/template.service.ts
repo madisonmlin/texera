@@ -3,11 +3,16 @@ import {HttpClient, HttpParams} from "@angular/common/http";
 import {Observable} from "rxjs";
 import {AppSettings} from "../../../../common/app-setting";
 import {Template} from "../../../../common/type/template";
-import {WorkflowContent} from "../../../../common/type/workflow";
-import {DEFAULT_WORKFLOW_NAME} from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {Workflow, WorkflowContent} from "../../../../common/type/workflow";
+import {
+  DEFAULT_WORKFLOW_NAME,
+  WORKFLOW_BASE_URL
+} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import {DashboardWorkflow} from "../../../type/dashboard-workflow.interface";
-import {filter} from "rxjs/operators";
+import {filter, map} from "rxjs/operators";
 import {DashboardTemplate} from "../../../type/dashboard-template.interface";
+import {WorkflowUtilService} from "../../../../workspace/service/workflow-graph/util/workflow-util.service";
+import {jsonCast} from "../../../../common/util/storage";
 
 export const TEMPLATE_BASE_URL = "template";
 export const TEMPLATE_CREATE_URL = TEMPLATE_BASE_URL + "/create";
@@ -41,6 +46,13 @@ export class TemplateService {
     return this.http.get<{ tid: string, name: string }[]>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_LIST_URL}`);
   }
 
+  public retrieveTemplate(tid: number): Observable<Template> {
+    return this.http.get<Template>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_BASE_URL}/${tid}`).pipe(
+      filter((template: Template) => template != null),
+      map(TemplateService.parseTemplateInfo)
+    );
+  }
+
   public deleteTemplate(tids: number[]): Observable<Response> {
     return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_DELETE_URL}`, {
       tids: tids,
@@ -53,5 +65,12 @@ export class TemplateService {
       params = params.append("tid", tid.toString());
     });
     return this.http.get<Record<number, number>>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_SIZE}`, { params });
+  }
+
+  public static parseTemplateInfo(template: Template): Template {
+    if (template != null && typeof template.content === "string") {
+      template.content = jsonCast<WorkflowContent>(template.content);
+    }
+    return template;
   }
 }
