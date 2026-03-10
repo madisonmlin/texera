@@ -145,7 +145,7 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // const templateName = "new-scGPT_FINAL"
+    // const templateName = "test-access"
     // const templateContent = JSON.parse(JSON.stringify(workflow)) as WorkflowContent
     // const templateConfigurableParameters = JSON.stringify({
     //   "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": ["textInput"]

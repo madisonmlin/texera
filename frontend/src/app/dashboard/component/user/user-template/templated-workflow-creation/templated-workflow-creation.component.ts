@@ -38,6 +38,7 @@ import {cloneDeep} from "lodash";
 import {Template} from "../../../../../common/type/template";
 import {switchMap} from "rxjs/operators";
 import {ActivatedRoute} from "@angular/router";
+import {TemplateService} from "../../../../service/user/template/template.service";
 
 @UntilDestroy()
 @Component({
@@ -52,7 +53,6 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
   public operatorIndexToForm: Record<string, any>[] = [];
   public isLogin: boolean = this.userService.isLogin();
   public currentUid: number | undefined;
-  public workflowInitialized: boolean = false;
   public configurableProperties: string | undefined;
 
   workflow: Workflow | undefined;
@@ -95,6 +95,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     private operatorMetadataService: OperatorMetadataService,
     private computingUnitStatusService: ComputingUnitStatusService,
     private computingUnitService: WorkflowComputingUnitManagingService,
+    private templateService: TemplateService,
     private workflowPersistService: WorkflowPersistService,
     private route: ActivatedRoute,
     private http: HttpClient
@@ -114,17 +115,10 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       return;
     }
 
-    if (!this.workflowInitialized) {
-      this.createTemplatedWorkflow().pipe(
-        switchMap((wid) => {
-          this.wid = wid;
-          return this.setWorkflowAccess(wid, "READ");
-        }),
-        tap(() => {
-          this.workflowInitialized = true;
-        }),
-        untilDestroyed(this)
-      ).subscribe();
+    if (!this.wid) {
+      this.createTemplatedWorkflow().pipe(untilDestroyed(this)).subscribe((wid) => {
+        this.wid = wid;
+      });
 
     } else {
       // this.updateOperator().pipe(untilDestroyed(this)).subscribe();
@@ -140,29 +134,28 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     //     "limit": this.model.nHVG
     //   }
     // };
-    const parameters = {
-      "TextInput-operator-4e1b277d-75a9-4299-af22-8b76fcb633da": {
-        "textInput": `file_path=${this.model.filePath}\nn_hvg=${this.model.nHVG}`
-      }
-    }
+
+    // const parameters = {
+    //   "FileParameter-operator": {
+    //     "filePairs": [
+    //       {
+    //         "fileKey": "file_path",
+    //         "fileName": this.model.filePath,
+    //       }
+    //     ],
+    //     "pairs": [
+    //       {
+    //         "key": "n_hvg",
+    //         "value": this.model.nHVG,
+    //       }
+    //     ]
+    //   }
+    // }
+
+    const parameters = {}
     return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {
       parameters: parameters
     })
-  }
-
-  // move to template.service.ts
-  private getTemplateContent(): Observable<WorkflowContent> {
-    return this.http.get<Template>(
-      `${AppSettings.getApiEndpoint()}/template/${this.tid}`
-    ).pipe(
-      map(template => template.content)
-    );
-  }
-
-  // move to workflow-access.service.ts
-  private setWorkflowAccess(wid: number, accessType: string): Observable<void> {
-    const userEmail = this.userService.getCurrentUser()?.email
-    return this.http.put<void>(`${AppSettings.getApiEndpoint()}/access/workflow/grant/${wid}/${userEmail}/${accessType}`, null)
   }
 
   private updateOperator(): Observable<Workflow> {
@@ -198,21 +191,21 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
   }
 
   ngOnInit(): void {
-    this.wid = undefined;
     return;
   }
 
   ngAfterViewInit(): void {
     this.tid = this.route.snapshot.params.tid;
-    this.getTemplateContent()
-      .pipe(untilDestroyed(this))
-      .subscribe(
-        (response) => {
-          this.template = response;
-          this.operatorIndexToId = response.operators.map(op => op.operatorID);
-          this.operatorIndexToForm = response.operators.map(op => cloneDeep(op.operatorProperties))
-          // create formly fields based on template operator parameters (operator, parameter name, field type, props)
-        }
-      )
+    if (this.tid) {
+      this.templateService.retrieveTemplate(this.tid)
+        .pipe(untilDestroyed(this))
+        .subscribe(
+          (template) => {
+            this.operatorIndexToId = template.content.operators.map(op => op.operatorID);
+            this.operatorIndexToForm = template.content.operators.map(op => cloneDeep(op.operatorProperties))
+            // create formly fields based on template operator parameters (operator, parameter name, field type, props)
+          }
+        )
+    }
   }
 }

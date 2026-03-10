@@ -9,12 +9,13 @@ import org.apache.texera.dao.jooq.generated.tables.daos.WorkflowOfTemplateDao
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.{POST, Path, Produces, QueryParam}
-import org.apache.texera.web.service.{WorkflowCreationService, TemplateService}
+import org.apache.texera.web.service.{TemplateService, WorkflowCreationService}
 import org.apache.texera.dao.jooq.generated.tables.pojos._
 import org.apache.texera.web.resource.dashboard.user.templated_workflow.TemplatedWorkflowResource._
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.databind.node.ObjectNode
+import org.apache.texera.dao.jooq.generated.enums.PrivilegeEnum
 
 case class BuildTemplatedWorkflowRequest(
                                           parameters: Map[String, Map[String, Any]]
@@ -87,7 +88,7 @@ class TemplatedWorkflowResource extends LazyLogging{
       null,                                // lastModifiedTime
       false                                // isPublic
     )
-    val workflow = workflowCreationService.createWorkflow(templated_workflow, user);
+    val workflow = workflowCreationService.createWorkflow(templated_workflow, user, privilege=PrivilegeEnum.READ);
     val wid = workflow.workflow.getWid;
     val mapper = new ObjectMapper().registerModule(DefaultScalaModule);
     val parameters = mapper.writeValueAsString(request.parameters);

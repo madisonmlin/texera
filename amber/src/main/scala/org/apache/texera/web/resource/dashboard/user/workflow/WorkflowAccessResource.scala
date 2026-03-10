@@ -176,20 +176,6 @@ class WorkflowAccessResource() {
       @PathParam("privilege") privilege: String,
       @Auth user: SessionUser
   ): Unit = {
-    val isModifyingOwnAccess = email.equals(user.getEmail)
-    val currentPrivilege = getPrivilege(wid, user.getUid)
-    val hasExistingAccess = !currentPrivilege.eq(PrivilegeEnum.NONE)
-
-    // Users can only modify their own access if they already have access
-    if (isModifyingOwnAccess && !hasExistingAccess) {
-      throw new BadRequestException("You cannot grant access to yourself!")
-    }
-
-    // Must have write access to modify access levels (including your own)
-    if (!hasWriteAccess(wid, user.getUid)) {
-      throw new ForbiddenException(s"You do not have permission to modify workflow $wid")
-    }
-
     val selfUserUid = user.getUid
     val userUid = userDao.fetchOneByEmail(email).getUid
     val workflowOwnerUid = context
@@ -197,6 +183,13 @@ class WorkflowAccessResource() {
       .from(WORKFLOW_OF_USER)
       .where(WORKFLOW_OF_USER.WID.eq(wid))
       .fetchOneInto(classOf[Integer])
+
+    // Must either have write access or be the owner to modify access levels
+    if (userUid != workflowOwnerUid && !hasWriteAccess(wid, user.getUid)) {
+      throw new ForbiddenException(s"You do not have permission to modify workflow $wid")
+    }
+
+    // Must be the owner to modify the owner's access level
     if (selfUserUid != userUid && userUid == workflowOwnerUid) {
       throw new ForbiddenException("You cannot modify the owner's permissions!")
     }

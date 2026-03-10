@@ -19,28 +19,28 @@ class WorkflowCreationService(context: DSLContext) {
     context.configuration()
   )
 
-  def insertWorkflow(workflow: Workflow, user: User): Unit = {
+  def insertWorkflow(workflow: Workflow, user: User, privilege: PrivilegeEnum): Unit = {
     workflowDao.insert(workflow)
     workflowOfUserDao.insert(new WorkflowOfUser(user.getUid, workflow.getWid))
     workflowUserAccessDao.insert(
       new WorkflowUserAccess(
         user.getUid,
         workflow.getWid,
-        PrivilegeEnum.WRITE
+        privilege
       )
     )
   }
 
-  def createWorkflow(workflow: Workflow, sessionUser: SessionUser): DashboardWorkflow = {
+  def createWorkflow(workflow: Workflow, sessionUser: SessionUser, privilege: PrivilegeEnum=PrivilegeEnum.WRITE): DashboardWorkflow = {
     val user = sessionUser.getUser
     if (workflow.getWid != null) {
       throw new BadRequestException("Cannot create a new workflow with a provided id.")
     } else {
-      this.insertWorkflow(workflow, user)
+      this.insertWorkflow(workflow, user, privilege)
       WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = true)
       DashboardWorkflow(
         isOwner = true,
-        PrivilegeEnum.WRITE.toString,
+        privilege.toString,
         user.getName,
         workflowDao.fetchOneByWid(workflow.getWid),
         List[Integer](),

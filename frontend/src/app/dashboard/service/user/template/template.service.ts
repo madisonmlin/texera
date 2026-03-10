@@ -31,7 +31,7 @@ export class TemplateService {
   public createTemplate(
     newTemplateContent: WorkflowContent,
     newTemplateName: string = DEFAULT_TEMPLATE_NAME,
-    newTemplateConfigurableParameters: string = "",
+    newTemplateConfigurableParameters: string = "{}",
   ): Observable<DashboardTemplate> {
     return this.http
       .post<DashboardTemplate>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_CREATE_URL}`, {

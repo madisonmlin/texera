@@ -205,7 +205,12 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           const fragment = this.route.snapshot.fragment;
           // load the fetched workflow
           this.workflowActionService.reloadWorkflow(workflow);
-          this.workflowActionService.enableWorkflowModification();
+
+          if (workflow.readonly) {
+            this.workflowActionService.disableWorkflowModification();
+          } else {
+            this.workflowActionService.enableWorkflowModification();
+          }
           // set the URL fragment to previous value
           // because reloadWorkflow will highlight/unhighlight all elements
           // which will change the URL fragment
