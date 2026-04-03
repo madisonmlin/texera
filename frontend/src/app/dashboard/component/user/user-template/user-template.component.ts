@@ -350,6 +350,37 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
     }
   }
 
+  public handleConfirmDeleteSelectedTemplates(): void {
+    const checkedEntries = this.searchResultsComponent.entries.filter(i => i.checked);
+    let targetTids: number[] = [];
+
+    for (const entry of checkedEntries) {
+      const tid = entry.template.template.tid;
+      if (tid) {
+        targetTids.push(tid);
+      } else {
+        return;
+      }
+    }
+
+    if (targetTids.length > 0) {
+      this.templateService
+        .deleteTemplate(targetTids)
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: _ => {
+            this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(templateEntry => {
+              let entryTid = templateEntry.template.template.tid;
+              // Check if tid is defined and if it's not included in targetTids
+              return entryTid === undefined || !targetTids.includes(entryTid);
+            });
+          },
+          // TODO: fix this with notification component
+          error: (err: unknown) => alert(err),
+        });
+    }
+  }
+
   ngOnInit(): void {
     return;
   }

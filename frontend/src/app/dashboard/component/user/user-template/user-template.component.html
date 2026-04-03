@@ -88,6 +88,19 @@
             nzTheme="outline"
             nzType="copy"></i>
         </button>
+        <button
+          *ngIf="multiTemplatesOperationButtonEnabled()"
+          nz-popconfirm
+          nzPopconfirmTitle="Confirm to delete selected templates."
+          nz-button
+          nz-tooltip="Delete selected templates"
+          (nzOnConfirm)="handleConfirmDeleteSelectedTemplates()"
+          nzTooltipPlacement="bottom">
+          <i
+            nz-icon
+            nzTheme="outline"
+            nzType="delete"></i>
+        </button>
       </nz-button-group>
       <texera-filters #filters></texera-filters>
     </div>
