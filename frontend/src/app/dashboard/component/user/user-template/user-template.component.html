@@ -49,33 +49,33 @@
               nzTheme="outline"></i>
           </button>
         </nz-upload>
-<!--        <button-->
-<!--          *ngIf="multiTemplatesOperationButtonEnabled()"-->
-<!--          (click)="toggleSelection()"-->
-<!--          nz-button-->
-<!--          nzType="default"-->
-<!--          [nz-tooltip]="selectionTooltip"-->
-<!--          nzTooltipPlacement="bottom"-->
-<!--          title="Batch Select"-->
-<!--          type="button">-->
-<!--          <i-->
-<!--            nz-icon-->
-<!--            nzType="select"-->
-<!--            nzTheme="outline"></i>-->
-<!--        </button>-->
-<!--        <button-->
-<!--          *ngIf="multiTemplatesOperationButtonEnabled()"-->
-<!--          (click)="onClickOpenDownloadZip()"-->
-<!--          nz-button-->
-<!--          title="Download added template as a ZIP file"-->
-<!--          nz-tooltip="Download added template as a ZIP file"-->
-<!--          nzTooltipPlacement="bottom"-->
-<!--          type="button">-->
-<!--          <i-->
-<!--            nz-icon-->
-<!--            nzType="cloud-download"-->
-<!--            nzTheme="outline"></i>-->
-<!--        </button>-->
+        <button
+          *ngIf="multiTemplatesOperationButtonEnabled()"
+          (click)="toggleSelection()"
+          nz-button
+          nzType="default"
+          [nz-tooltip]="selectionTooltip"
+          nzTooltipPlacement="bottom"
+          title="Batch Select"
+          type="button">
+          <i
+            nz-icon
+            nzType="select"
+            nzTheme="outline"></i>
+        </button>
+        <button
+          *ngIf="multiTemplatesOperationButtonEnabled()"
+          (click)="onClickOpenDownloadZip()"
+          nz-button
+          title="Download added template as a ZIP file"
+          nz-tooltip="Download added template as a ZIP file"
+          nzTooltipPlacement="bottom"
+          type="button">
+          <i
+            nz-icon
+            nzType="cloud-download"
+            nzTheme="outline"></i>
+        </button>
       </nz-button-group>
       <texera-filters #filters></texera-filters>
     </div>

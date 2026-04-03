@@ -39,7 +39,7 @@
         [checked]="entry.checked"
         (change)="onCheckboxChange(entry)"
         (click)="$event.stopPropagation()"
-        *ngIf="isPrivateSearch && entry.type==='workflow'" />
+        *ngIf="isPrivateSearch && (entry.type==='workflow' || entry.type==='template')" />
     </div>
 
     <div
