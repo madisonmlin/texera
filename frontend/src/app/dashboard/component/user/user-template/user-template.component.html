@@ -76,6 +76,18 @@
             nzType="cloud-download"
             nzTheme="outline"></i>
         </button>
+        <button
+          *ngIf="multiTemplatesOperationButtonEnabled()"
+          (click)="onClickDuplicateSelectedTemplates()"
+          nz-button
+          nz-tooltip="Duplicate selected templates"
+          nzTooltipPlacement="bottom"
+          type="button">
+          <i
+            nz-icon
+            nzTheme="outline"
+            nzType="copy"></i>
+        </button>
       </nz-button-group>
       <texera-filters #filters></texera-filters>
     </div>

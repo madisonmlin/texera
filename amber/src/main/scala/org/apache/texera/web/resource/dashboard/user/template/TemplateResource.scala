@@ -12,13 +12,17 @@ import org.apache.texera.dao.jooq.generated.tables.pojos._
 import org.apache.texera.web.resource.dashboard.user.template.TemplateResource.{context, templateDao, templateOfUserDao}
 
 import javax.ws.rs.core.MediaType
-import javax.ws.rs.{BadRequestException, GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam, WebApplicationException}
+import javax.ws.rs.{BadRequestException, Consumes, ForbiddenException, GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam, WebApplicationException}
 import scala.jdk.CollectionConverters._
 import org.apache.texera.web.resource.dashboard.user.template.TemplateResource._
+import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
+import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
+import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.{DashboardWorkflow, WorkflowIDs, assignNewOperatorIds, context, workflowDao, workflowOfProjectDao, workflowOfProjectExists}
 
 import javax.annotation.security.RolesAllowed
 import org.apache.texera.web.service.{TemplateEntry, TemplateService}
 
+import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
 
 object TemplateResource {
@@ -135,6 +139,59 @@ class TemplateResource extends LazyLogging {
   def retrieveTemplate(@PathParam("tid") tid: Integer, @Auth sessionUser: SessionUser): TemplateEntry = {
     this.templateService.retrieveTemplate(tid);
   }
+
+  /**
+   * This method duplicates the target template, the new template name is appended with `_copy`
+   *
+   * @param template , a template to be duplicated
+   * @return Template, which contains the generated tid if not provided
+   */
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/duplicate")
+  def duplicateTemplate(
+                         templateIDs: TemplateIDs,
+                         @Auth sessionUser: SessionUser
+                       ): List[DashboardTemplate] = {
+
+//    val user = sessionUser.getUser
+//    // do the permission check first
+//    for (tid <- templateIDs.tids) {
+//      if (!TemplateAccessResource.hasReadAccess(tid, user.getUid)) {
+//        throw new ForbiddenException("No sufficient access privilege.")
+//      }
+//    }
+
+    val resultTemplates: ListBuffer[DashboardTemplate] = ListBuffer()
+    // then start a transaction and do the duplication
+    try {
+      context.transaction { txConfig =>
+        for (tid <- templateIDs.tids) {
+          val oldTemplate: Template = templateDao.fetchOneByTid(tid)
+          val newTemplate = createTemplate(
+            new Template(
+              null,
+              oldTemplate.getName + "_copy",
+              oldTemplate.getDescription,
+              assignNewOperatorIds(oldTemplate.getContent),
+              null,
+              null,
+              ""    // configurableParameters (no isPublic value, unlike Workflow)
+            ),
+            sessionUser
+          )
+          resultTemplates += newTemplate
+        }
+      }
+    } catch {
+      case _: BadRequestException | _: ForbiddenException =>
+      case NonFatal(exception) =>
+        throw new WebApplicationException(exception)
+    }
+    resultTemplates.toList
+  }
+
 
   @GET
   @Path("/size")

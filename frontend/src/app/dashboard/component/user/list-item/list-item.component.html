@@ -206,7 +206,7 @@
     <button
       nz-button
       nzType="text"
-      *ngIf="entry.type==='workflow'"
+      *ngIf="entry.type==='workflow' || entry.type==='template'"
       title="Copy"
       (click)="duplicated.emit()">
       <i

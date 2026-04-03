@@ -6,7 +6,7 @@ import {Template} from "../../../../common/type/template";
 import {Workflow, WorkflowContent} from "../../../../common/type/workflow";
 import {
   DEFAULT_WORKFLOW_NAME,
-  WORKFLOW_BASE_URL
+  WORKFLOW_BASE_URL, WORKFLOW_DUPLICATE_URL
 } from "../../../../common/service/workflow-persist/workflow-persist.service";
 import {DashboardWorkflow} from "../../../type/dashboard-workflow.interface";
 import {filter, map} from "rxjs/operators";
@@ -17,6 +17,7 @@ import {jsonCast} from "../../../../common/util/storage";
 export const TEMPLATE_BASE_URL = "template";
 export const TEMPLATE_CREATE_URL = TEMPLATE_BASE_URL + "/create";
 export const TEMPLATE_LIST_URL = TEMPLATE_BASE_URL + "/list";
+export const TEMPLATE_DUPLICATE_URL = TEMPLATE_BASE_URL + "/duplicate";
 export const TEMPLATE_DELETE_URL = TEMPLATE_BASE_URL + "/delete";
 export const TEMPLATE_SIZE = TEMPLATE_BASE_URL + "/size";
 
@@ -44,6 +45,14 @@ export class TemplateService {
 
   public getTemplate(): Observable<{ tid: string, name: string }[]> {
     return this.http.get<{ tid: string, name: string }[]>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_LIST_URL}`);
+  }
+
+  public duplicateTemplate(targetTids: number[]): Observable<DashboardTemplate[]> {
+    return this.http
+      .post<DashboardTemplate[]>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_DUPLICATE_URL}`, {
+        tids: targetTids
+      })
+      .pipe(filter((createdTemplates: DashboardTemplate[]) => createdTemplates != null && createdTemplates.length > 0));
   }
 
   public retrieveTemplate(tid: number): Observable<Template> {

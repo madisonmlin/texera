@@ -26,7 +26,7 @@ import {SearchService} from "../../../service/user/search.service";
 import {DatasetService} from "../../../service/user/dataset/dataset.service";
 import {NzMessageService} from "ng-zorro-antd/message";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {DashboardEntry} from "../../../type/dashboard-entry";
+import {DashboardEntry, UserInfo} from "../../../type/dashboard-entry";
 import {SearchResultsComponent} from "../search-results/search-results.component";
 import {FiltersComponent} from "../filters/filters.component";
 import {SortMethod} from "../../../type/sort-method";
@@ -40,6 +40,9 @@ import {WorkflowContent} from "../../../../common/type/workflow";
 import {DEFAULT_WORKFLOW_NAME} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import JSZip from "jszip";
 import {DownloadService} from "../../../service/user/download/download.service";
+import {DashboardWorkflow} from "../../../type/dashboard-workflow.interface";
+import {isDefined} from "../../../../common/util/predicate";
+import {DashboardTemplate} from "../../../type/dashboard-template.interface";
 
 @UntilDestroy()
 @Component({
@@ -164,7 +167,44 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
       .subscribe(() => this.search());
   }
 
-  public async onClickDuplicateTemplate(entry: DashboardEntry): Promise<void> {}
+  public async onClickDuplicateTemplate(entry: DashboardEntry): Promise<void> {
+    if (entry.template.template.tid) {
+      try {
+        let duplicatedTemplatesInfo: DashboardTemplate[] = [];
+        duplicatedTemplatesInfo = await firstValueFrom(
+          this.templateService.duplicateTemplate([entry.template.template.tid])
+        );
+
+        const userIds = new Set<number>();
+        duplicatedTemplatesInfo.forEach(template => {
+          if (template.ownerId) {
+            userIds.add(template.ownerId);
+          }
+        });
+
+        let userIdToInfoMap: { [key: number]: UserInfo } = {};
+        if (userIds.size > 0) {
+          userIdToInfoMap = await firstValueFrom(this.searchService.getUserInfo(Array.from(userIds)));
+        }
+
+        const newEntries = duplicatedTemplatesInfo.map(duplicatedTemplateInfo => {
+          const entry = new DashboardEntry(duplicatedTemplateInfo);
+          const userInfo = userIdToInfoMap[duplicatedTemplateInfo.ownerId];
+          if (userInfo) {
+            entry.setOwnerName(userInfo.userName);
+            entry.setOwnerGoogleAvatar(userInfo.googleAvatar ?? "");
+          }
+          return entry;
+        });
+
+        this.searchResultsComponent.entries = [...newEntries, ...this.searchResultsComponent.entries];
+      } catch (err: unknown) {
+        console.log("Error duplicating template:", err);
+        // @ts-ignore // TODO: fix this with notification component
+        alert((err as any).error);
+      }
+    }
+  }
 
   public deleteTemplate(entry: DashboardEntry): void {
     if (entry.template.template.tid == undefined) {
@@ -277,6 +317,37 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
         },
         error: (err: unknown) => console.error("Error downloading templates:", err),
       });
+  }
+
+  public onClickDuplicateSelectedTemplates(): void {
+    const checkedEntries = this.searchResultsComponent.entries.filter(i => i.checked);
+    let targetTids: number[] = [];
+
+    for (const entry of checkedEntries) {
+      const tid = entry.template.template.tid;
+      if (tid) {
+        targetTids.push(tid);
+      } else {
+        return;
+      }
+    }
+
+    if (targetTids.length > 0) {
+      this.templateService
+        .duplicateTemplate(targetTids)
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: duplicatedTemplatesInfo => {
+            this.searchResultsComponent.entries = [
+              ...duplicatedTemplatesInfo.map(duplicatedTemplateInfo => new DashboardEntry(duplicatedTemplateInfo)),
+              ...this.searchResultsComponent.entries,
+            ];
+
+            // this.searchResultsComponent.clearAllSelections();
+          }, // TODO: fix this with notification component
+          error: (err: unknown) => alert(err),
+        });
+    }
   }
 
   ngOnInit(): void {
