@@ -216,7 +216,7 @@
     <button
       nz-button
       nzType="text"
-      *ngIf="entry.type === 'workflow' || entry.type === 'dataset'"
+      *ngIf="entry.type === 'workflow' || entry.type === 'dataset' || entry.type === 'template'"
       title="Download"
       (click)="onClickDownload()">
       <i

@@ -234,6 +234,8 @@ export class ListItemComponent implements OnChanges {
         .subscribe();
     } else if (this.entry.type === "dataset") {
       this.downloadService.downloadDataset(this.entry.id, this.entry.name).pipe(untilDestroyed(this)).subscribe();
+    } else if (this.entry.type === "template") {
+      this.downloadService.downloadTemplate(this.entry.id, this.entry.name).pipe(untilDestroyed(this)).subscribe();
     }
   };
 
