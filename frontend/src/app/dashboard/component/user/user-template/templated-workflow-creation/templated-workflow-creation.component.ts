@@ -24,19 +24,13 @@ import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {NotificationService} from "../../../../../common/service/notification/notification.service";
 import {UserService} from "../../../../../common/service/user/user.service";
 import {WorkflowActionService} from "../../../../../workspace/service/workflow-graph/model/workflow-action.service";
-import {ExecuteWorkflowService} from "../../../../../workspace/service/execute-workflow/execute-workflow.service";
 import {Workflow, WorkflowContent} from "../../../../../common/type/workflow";
-import {OperatorMetadataService} from "../../../../../workspace/service/operator-metadata/operator-metadata.service";
-import {ComputingUnitStatusService} from "../../../../../workspace/service/computing-unit-status/computing-unit-status.service";
-import {WorkflowComputingUnitManagingService} from "../../../../../workspace/service/workflow-computing-unit/workflow-computing-unit-managing.service";
 import {WorkflowPersistService} from "../../../../../common/service/workflow-persist/workflow-persist.service";
 import {AppSettings} from "../../../../../common/app-setting";
 import {HttpClient} from "@angular/common/http";
 import {isEqual} from "lodash-es";
-import {map, Observable, of, tap} from "rxjs";
+import {Observable, of, tap} from "rxjs";
 import {cloneDeep} from "lodash";
-import {Template} from "../../../../../common/type/template";
-import {switchMap} from "rxjs/operators";
 import {ActivatedRoute} from "@angular/router";
 import {TemplateService} from "../../../../service/user/template/template.service";
 
@@ -49,11 +43,11 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
   public tid: number | undefined;
   public wid: number | undefined;
   public template: WorkflowContent | undefined;
-  public operatorIndexToId: string[] = [];
-  public operatorIndexToForm: Record<string, any>[] = [];
+  public operatorIdToProperties: Record<string, any> = {};
   public isLogin: boolean = this.userService.isLogin();
   public currentUid: number | undefined;
   public configurableProperties: string | undefined;
+  private readonly PARAMETER_OP_ID: string = "FileParameter-operator-affac615-2387-4495-a51f-b7d9a5957f1d"
 
   workflow: Workflow | undefined;
   model = {
@@ -91,10 +85,6 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     private notificationService: NotificationService,
     private userService: UserService,
     private workflowActionService: WorkflowActionService,
-    private executeWorkflowService: ExecuteWorkflowService,
-    private operatorMetadataService: OperatorMetadataService,
-    private computingUnitStatusService: ComputingUnitStatusService,
-    private computingUnitService: WorkflowComputingUnitManagingService,
     private templateService: TemplateService,
     private workflowPersistService: WorkflowPersistService,
     private route: ActivatedRoute,
@@ -121,38 +111,28 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       });
 
     } else {
-      // this.updateOperator().pipe(untilDestroyed(this)).subscribe();
+      this.updateOperator().pipe(untilDestroyed(this)).subscribe();
     }
   }
 
   private createTemplatedWorkflow(): Observable<number> {
-    // const parameters = {
-    //   "CSVFileScan-operator": {
-    //     "fileName": this.model.filePath
-    //   },
-    //   "Limit-operator": {
-    //     "limit": this.model.nHVG
-    //   }
-    // };
+    const parameters = {
+      [this.PARAMETER_OP_ID]: {
+        "filePairs": [
+          {
+            "fileKey": "file_path",
+            "fileName": this.model.filePath
+          }
+        ],
+        "pairs": [
+          {
+            "key": "n_hvg",
+            "value": String(this.model.nHVG)
+          }
+        ]
+      }
+    }
 
-    // const parameters = {
-    //   "FileParameter-operator": {
-    //     "filePairs": [
-    //       {
-    //         "fileKey": "file_path",
-    //         "fileName": this.model.filePath,
-    //       }
-    //     ],
-    //     "pairs": [
-    //       {
-    //         "key": "n_hvg",
-    //         "value": this.model.nHVG,
-    //       }
-    //     ]
-    //   }
-    // }
-
-    const parameters = {}
     return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {
       parameters: parameters
     })
@@ -175,19 +155,17 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
   }
 
   private updateOperatorForms(): void {
-    this.operatorIndexToForm[0]["fileName"] = this.model.filePath;
-    this.operatorIndexToForm[1]["limit"] = this.model.nHVG;
+    this.operatorIdToProperties[this.PARAMETER_OP_ID]["filePairs"][0]["fileName"] = this.model.filePath;
+    this.operatorIdToProperties[this.PARAMETER_OP_ID]["pairs"][0]["value"] = String(this.model.nHVG);
   }
 
   private updateOperatorProperties(): void {
-    this.workflowActionService.setOperatorProperty(this.operatorIndexToId[0], this.operatorIndexToForm[0])
-    this.workflowActionService.setOperatorProperty(this.operatorIndexToId[1], this.operatorIndexToForm[1])
+    this.workflowActionService.setOperatorProperty(this.PARAMETER_OP_ID, this.operatorIdToProperties[this.PARAMETER_OP_ID]);
   }
 
   private workflowChanged(): boolean {
-    const operator0 = this.workflowActionService.getTexeraGraph().getOperator(this.operatorIndexToId[0]);
-    const operator1 = this.workflowActionService.getTexeraGraph().getOperator(this.operatorIndexToId[1]);
-    return !isEqual(this.operatorIndexToForm[0], operator0.operatorProperties) || !isEqual(this.operatorIndexToForm[1], operator1.operatorProperties);
+    const operator = this.workflowActionService.getTexeraGraph().getOperator(this.PARAMETER_OP_ID);
+    return !isEqual(this.operatorIdToProperties[this.PARAMETER_OP_ID], operator.operatorProperties);
   }
 
   ngOnInit(): void {
@@ -201,8 +179,10 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
         .pipe(untilDestroyed(this))
         .subscribe(
           (template) => {
-            this.operatorIndexToId = template.content.operators.map(op => op.operatorID);
-            this.operatorIndexToForm = template.content.operators.map(op => cloneDeep(op.operatorProperties))
+            this.operatorIdToProperties = {};
+            template.content.operators.forEach(op => {
+              this.operatorIdToProperties[op.operatorID] = cloneDeep(op.operatorProperties);
+            });
             // create formly fields based on template operator parameters (operator, parameter name, field type, props)
           }
         )
