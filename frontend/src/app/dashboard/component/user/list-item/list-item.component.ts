@@ -381,6 +381,10 @@ export class ListItemComponent implements OnChanges {
     }
   }
 
+  openCreateTemplateFromWorkflowPage(wid: number | undefined): void {}
+
+  openCreateWorkflowFromTemplatePage(tid: number | undefined): void {}
+
   openDetailModal(wid: number | undefined): void {
     const modalRef = this.modal.create({
       nzTitle: "Workflow Detail",

@@ -188,6 +188,26 @@
       *ngIf="entry.type==='workflow'"
       nz-button
       nzType="text"
+      title="Create Template"
+      (click)="openCreateTemplateFromWorkflowPage(this.entry.id)">
+      <i
+        nz-icon
+        nzType="experiment"></i>
+    </button>
+    <button
+      *ngIf="entry.type==='template'"
+      nz-button
+      nzType="text"
+      title="Create Workflow"
+      (click)="openCreateWorkflowFromTemplatePage(this.entry.id)">
+      <i
+        nz-icon
+        nzType="project"></i>
+    </button>
+    <button
+      *ngIf="entry.type==='workflow'"
+      nz-button
+      nzType="text"
       title="Detail"
       (click)="openDetailModal(this.entry.id)">
       <i
