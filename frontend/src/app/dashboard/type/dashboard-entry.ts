@@ -21,9 +21,10 @@ import { DashboardFile } from "./dashboard-file.interface";
 import { DashboardWorkflow } from "./dashboard-workflow.interface";
 import { DashboardProject } from "./dashboard-project.interface";
 import { DashboardDataset } from "./dashboard-dataset.interface";
+import {DashboardTemplate} from "./dashboard-template.interface";
+import { DashboardWorkflowComputingUnit } from "../../workspace/types/workflow-computing-unit";
 import { isDashboardDataset, isDashboardFile, isDashboardProject, isDashboardWorkflow, isDashboardTemplate, isDashboardWorkflowComputingUnit } from "./type-predicates";
 import { EntityType } from "../../hub/service/hub.service";
-import {DashboardTemplate} from "./dashboard-template.interface";
 
 export interface UserInfo {
   userName: string;
@@ -51,7 +52,7 @@ export class DashboardEntry {
   accessibleUserIds: number[];
   coverImageUrl?: string;
 
-  constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset | DashboardTemplate, DashboardWorkflowComputingUnit) {
+  constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset | DashboardTemplate | DashboardWorkflowComputingUnit) {
     if (isDashboardWorkflow(value)) {
       this.type = EntityType.Workflow;
       this.id = value.workflow.wid;
