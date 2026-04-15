@@ -51,7 +51,8 @@ import { WorkflowCompilingService } from "../service/compile-workflow/workflow-c
 import { DASHBOARD_USER_WORKSPACE } from "../../app-routing.constant";
 import { GuiConfigService } from "../../common/service/gui-config.service";
 import { checkIfWorkflowBroken } from "../../common/util/workflow-check";
-import {WorkflowDisplayMode} from "../../dashboard/type/workflow-display-mode";
+import {TemplateService} from "../../dashboard/service/user/template/template.service";
+import {Template} from "../../common/type/template";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -90,6 +91,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private undoRedoService: UndoRedoService,
     private workflowPersistService: WorkflowPersistService,
     private workflowActionService: WorkflowActionService,
+    private templateService: TemplateService,
     private location: Location,
     private route: ActivatedRoute,
     private operatorMetadataService: OperatorMetadataService,
@@ -135,9 +137,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      */
     // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
     this.workflowActionService.resetAsNewWorkflow();
-    // if a workflow id is present in the route, display loading spinner immediately while loading
-    let widInRoute = this.wid ?? this.route.snapshot.params.id;
-    if (widInRoute) {
+    // if an id is present in the route, display loading spinner immediately while loading
+    let idInRoute = this.wid ?? this.route.snapshot.params.id;
+    if (idInRoute) {
       this.isLoading = true;
       this.workflowActionService.disableWorkflowModification();
     }
@@ -149,7 +151,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   @HostListener("window:beforeunload")
   ngOnDestroy() {
-    if (this.userService.isLogin() && this.workflowPersistService.isWorkflowPersistEnabled()) {
+    if (this.isWorkflowMode() && this.userService.isLogin() && this.workflowPersistService.isWorkflowPersistEnabled()) {
       const workflow = this.workflowActionService.getWorkflow();
       this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
     }
@@ -160,6 +162,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   registerAutoPersistWorkflow(): void {
     // make sure it is only registered once
+    if (!this.isWorkflowMode()) {
+      return;
+    }
+
     if (this.autoPersistRegistered) {
       return;
     }
@@ -194,47 +200,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       .pipe(untilDestroyed(this))
       .subscribe(
         (workflow: Workflow) => {
-          if (checkIfWorkflowBroken(workflow)) {
-            this.notificationService.error(
-              "Sorry! The workflow is broken and cannot be persisted. Please contact the system admin."
-            );
-          }
-
-          this.workflowActionService.setNewSharedModel(wid, this.userService.getCurrentUser());
-          // remember URL fragment
-          const fragment = this.route.snapshot.fragment;
-          // load the fetched workflow
-          this.workflowActionService.reloadWorkflow(workflow);
-
-          if (workflow.readonly) {
-            this.workflowActionService.disableWorkflowModification();
-          } else {
-            this.workflowActionService.enableWorkflowModification();
-          }
-          // set the URL fragment to previous value
-          // because reloadWorkflow will highlight/unhighlight all elements
-          // which will change the URL fragment
-          this.router.navigate([], {
-            relativeTo: this.route,
-            fragment: fragment !== null ? fragment : undefined,
-            preserveFragment: false,
-          });
-          // highlight the operator, comment box, or link in the URL fragment
-          if (fragment) {
-            if (this.workflowActionService.getTexeraGraph().hasElementWithID(fragment)) {
-              this.workflowActionService.highlightElements(false, fragment);
-            } else {
-              this.notificationService.error(`Element ${fragment} doesn't exist`);
-              // remove the fragment from the URL
-              this.router.navigate([], { relativeTo: this.route });
-            }
-          }
-          // clear stack
-          this.undoRedoService.clearUndoStack();
-          this.undoRedoService.clearRedoStack();
-          this.isLoading = false;
-          this.registerAutoPersistWorkflow();
-          this.triggerCenter();
+          this.loadWorkflowIntoWorkspace(workflow);
         },
         () => {
           this.workflowActionService.resetAsNewWorkflow();
@@ -249,14 +215,104 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       );
   }
 
+  loadTemplateWithId(tid: number): void {
+    this.isLoading = true;
+    this.workflowActionService.disableWorkflowModification();
+    this.templateService
+      .retrieveTemplate(tid)
+      .pipe(untilDestroyed(this))
+      .subscribe(
+        (template: Template) => {
+          let workspaceWorkflow = this.createWorkflowFromTemplate(template);
+          console.log("template: ")
+          console.log(template)
+          console.log("workflow: ")
+          console.log(workspaceWorkflow);
+          this.loadWorkflowIntoWorkspace(workspaceWorkflow);
+        },
+        () => {
+          this.workflowActionService.resetAsNewWorkflow();
+          // enable workspace for modification
+          this.workflowActionService.enableWorkflowModification();
+          // clear stack
+          this.undoRedoService.clearUndoStack();
+          this.undoRedoService.clearRedoStack();
+          this.message.error("You don't have access to this template, please log in with an appropriate account");
+          this.isLoading = false;
+        }
+      );
+  }
+
+  loadWorkflowIntoWorkspace(workflow: Workflow): void {
+    if (checkIfWorkflowBroken(workflow)) {
+      this.notificationService.error(
+        "Sorry! The workflow is broken and cannot be persisted. Please contact the system admin."
+      );
+    }
+
+    if (this.isWorkflowMode()) {
+      this.workflowActionService.setNewSharedModel(workflow.wid, this.userService.getCurrentUser());
+    } else {
+      this.workflowActionService.setNewSharedModel(undefined);
+    }
+
+    // remember URL fragment
+    const fragment = this.route.snapshot.fragment;
+    // load the fetched workflow
+    this.workflowActionService.reloadWorkflow(workflow);
+
+    if (workflow.readonly) {
+      this.workflowActionService.disableWorkflowModification();
+    } else {
+      this.workflowActionService.enableWorkflowModification();
+    }
+    // set the URL fragment to previous value
+    // because reloadWorkflow will highlight/unhighlight all elements
+    // which will change the URL fragment
+    this.router.navigate([], {
+      relativeTo: this.route,
+      fragment: fragment !== null ? fragment : undefined,
+      preserveFragment: false,
+    });
+    // highlight the operator, comment box, or link in the URL fragment
+    if (fragment) {
+      if (this.workflowActionService.getTexeraGraph().hasElementWithID(fragment)) {
+        this.workflowActionService.highlightElements(false, fragment);
+      } else {
+        this.notificationService.error(`Element ${fragment} doesn't exist`);
+        // remove the fragment from the URL
+        this.router.navigate([], { relativeTo: this.route });
+      }
+    }
+    // clear stack
+    this.undoRedoService.clearUndoStack();
+    this.undoRedoService.clearRedoStack();
+    this.isLoading = false;
+    this.registerAutoPersistWorkflow();
+    this.triggerCenter();
+  }
+
+  createWorkflowFromTemplate(template: Template): Workflow {
+    return {
+      name: template.name,
+      description: template.description,
+      wid: undefined,
+      creationTime: template.creationTime,
+      lastModifiedTime: template.lastModifiedTime,
+      isPublished: template.isPublished,
+      readonly: template.readonly,
+      content: template.content,
+    }
+  }
+
   registerLoadOperatorMetadata() {
     this.operatorMetadataService
       .getOperatorMetadata()
       .pipe(untilDestroyed(this))
       .subscribe(() => {
-        let wid = this.wid ?? this.route.snapshot.params.id;
+        let id = this.wid ?? this.route.snapshot.params.id;
         // load workflow with wid if presented in the URL
-        if (wid) {
+        if (id) {
           // show loading spinner right away while waiting for workflow to load
           this.isLoading = true;
           // temporarily disable modification to prevent editing an empty workflow before real data is loaded
@@ -266,7 +322,12 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             .userChanged()
             .pipe(untilDestroyed(this))
             .subscribe(() => {
-              this.loadWorkflowWithId(wid);
+              if (this.isWorkflowMode()) {
+                this.loadWorkflowWithId(id);
+              } else if (this.isTemplateMode()) {
+                this.loadTemplateWithId(id);
+              }
+
             });
         } else {
           // no workflow to load; directly register auto persist for brand-new workflow
@@ -288,6 +349,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       });
   }
   updateViewCount() {
+    if (!this.isWorkflowMode()) return;
+
     let wid = this.wid ?? this.route.snapshot.params.id;
     let uid = this.userService.getCurrentUser()?.uid;
     this.hubService
@@ -302,5 +365,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   public get copilotEnabled(): boolean {
     return this.config.env.copilotEnabled;
+  }
+
+  private isWorkflowMode(): boolean {
+    return this.route.snapshot.data["type"] === "workflow";
+  }
+
+  private isTemplateMode(): boolean {
+    return this.route.snapshot.data["type"] === "template";
   }
 }

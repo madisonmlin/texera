@@ -116,10 +116,12 @@ routes.push({
         {
           path: "workflow",
           component: UserWorkflowComponent,
+          data: { type: "workflow" },
         },
         {
           path: "workflow/:id",
           component: WorkspaceComponent,
+          data: { type: "workflow" },
         },
         {
           path: "dataset",
@@ -148,10 +150,22 @@ routes.push({
         {
           path: "template",
           component: UserTemplateComponent,
+          data: { type: "template" },
         },
         {
-          path: "template/:tid",
+          path: "template/:id",
+          component: WorkspaceComponent,
+          data: { type: "template" },
+        },
+        {
+          path: "template/create",
+          component: WorkspaceComponent,
+          data: { type: "template" },
+        },
+        {
+          path: "template/create-workflow/:tid",
           component: TemplatedWorkflowCreationComponent,
+          data: { type: "template" },
         },
       ],
     },

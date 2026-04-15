@@ -12,8 +12,8 @@ case class TemplateEntry(
                                      name: String,
                                      description: String,
                                      content: String,
-                                     creation_time: Timestamp,
-                                     last_modified_time: Timestamp,
+                                     creationTime: Timestamp,
+                                     lastModifiedTime: Timestamp,
                                      configurableParameters: String
                                    )
 
@@ -32,8 +32,8 @@ class TemplateService(context: DSLContext) {
       name = record.getName,
       description = record.getDescription,
       content = record.getContent,
-      creation_time = record.getCreationTime,
-      last_modified_time = record.getLastModifiedTime,
+      creationTime = record.getCreationTime,
+      lastModifiedTime = record.getLastModifiedTime,
       configurableParameters = record.getConfigurableParameters
     )
   }

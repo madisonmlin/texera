@@ -50,9 +50,10 @@ import {
   DASHBOARD_USER_DATASET,
   DASHBOARD_USER_PROJECT,
   DASHBOARD_USER_WORKSPACE,
-  DASHBOARD_USER_TEMPLATE,
+  DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_TEMPLATED_WORKFLOW,
 } from "../../../../app-routing.constant";
 import { isDefined } from "../../../../common/util/predicate";
+import {Router} from "@angular/router";
 
 @UntilDestroy()
 @Component({
@@ -108,7 +109,8 @@ export class ListItemComponent implements OnChanges {
     private hubService: HubService,
     private downloadService: DownloadService,
     private cdr: ChangeDetectorRef,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private router: Router,
   ) {}
 
   initializeEntry() {
@@ -383,7 +385,9 @@ export class ListItemComponent implements OnChanges {
 
   openCreateTemplateFromWorkflowPage(wid: number | undefined): void {}
 
-  openCreateWorkflowFromTemplatePage(tid: number | undefined): void {}
+  openCreateWorkflowFromTemplatePage(tid: number | undefined): void {
+    this.router.navigate([`${DASHBOARD_USER_TEMPLATED_WORKFLOW}/${tid}`]);
+  }
 
   openDetailModal(wid: number | undefined): void {
     const modalRef = this.modal.create({
