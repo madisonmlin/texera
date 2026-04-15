@@ -67,10 +67,12 @@ export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
   ],
 })
 export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
-  @Input() wid?: number;
   public pid?: number = undefined;
   public writeAccess: boolean = false;
   public isLoading: boolean = false;
+  public mode: "workflow" | "template" = "workflow";
+  public tid?: number = undefined;
+  @Input() wid?: number = undefined;
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
 
   /**
@@ -116,6 +118,11 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      *    - there is no related project, parseInt will return NaN.
      *    - NaN || undefined will result in undefined.
      */
+    this.mode = this.route.snapshot.data["type"];
+    const id = Number(this.route.snapshot.params.id);
+
+    this.wid = this.mode === "workflow" ? this.wid ?? id : undefined;
+    this.tid = this.mode === "template" ? id : undefined;
     this.pid = parseInt(this.route.snapshot.queryParams.pid) || undefined;
     this.workflowActionService.setHighlightingEnabled(true);
   }

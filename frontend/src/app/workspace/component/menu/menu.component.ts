@@ -88,7 +88,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   public isWorkflowEmpty: boolean = false;
   public isSaving: boolean = false;
   public isWorkflowModifiable: boolean = false;
-  public workflowId?: number;
   public isExportDeactivate: boolean = false;
   public showRegion: boolean = false;
   public showGrid: boolean = false;
@@ -96,6 +95,9 @@ export class MenuComponent implements OnInit, OnDestroy {
   public showStatus: boolean = false;
   protected readonly DASHBOARD_USER_WORKFLOW = DASHBOARD_USER_WORKFLOW;
 
+  @Input() public mode: "workflow" | "template" = "workflow";
+  @Input() public workflowId?: number;
+  @Input() public templateId?: number;
   @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
@@ -211,6 +213,14 @@ export class MenuComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.workflowResultExportService.resetFlags();
     this.computingUnitStatusSubscription.unsubscribe();
+  }
+
+  public get entityId(): number | undefined {
+    if (this.mode === "workflow") {
+      return this.workflowId;
+    } else if (this.mode === "template") {
+      return this.templateId;
+    }
   }
 
   private subscribeToComputingUnitSelection(): void {
@@ -654,6 +664,10 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   public persistWorkflow(): void {
+    if (this.mode === "template") {
+      return;
+    }
+
     this.isSaving = true;
     let localPid = this.pid;
     this.workflowPersistService
@@ -775,6 +789,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       .pipe(untilDestroyed(this))
       .subscribe(metadata => {
         this.workflowId = metadata.wid;
+        this.templateId = this.mode === "template" ? this.entityId : undefined;
         // consider adding the oprerator reconnect
       });
   }

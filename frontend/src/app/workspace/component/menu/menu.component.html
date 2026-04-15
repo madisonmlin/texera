@@ -34,8 +34,8 @@
         <label>
           <nz-avatar
             style="vertical-align: top; margin-top: 1px; margin-left: 3px"
-            *ngIf="workflowId"
-            [nzText]="workflowId.toString() || ''"></nz-avatar>
+            *ngIf="entityId"
+            [nzText]="entityId.toString() || ''"></nz-avatar>
           <input
             #workflowNameInput
             *ngIf="!displayParticularWorkflowVersion"
