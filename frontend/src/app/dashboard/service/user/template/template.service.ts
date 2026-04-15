@@ -4,17 +4,14 @@ import {Observable} from "rxjs";
 import {AppSettings} from "../../../../common/app-setting";
 import {Template} from "../../../../common/type/template";
 import {Workflow, WorkflowContent} from "../../../../common/type/workflow";
-import {
-  DEFAULT_WORKFLOW_NAME,
-  WORKFLOW_BASE_URL, WORKFLOW_DUPLICATE_URL
-} from "../../../../common/service/workflow-persist/workflow-persist.service";
-import {DashboardWorkflow} from "../../../type/dashboard-workflow.interface";
 import {filter, map} from "rxjs/operators";
 import {DashboardTemplate} from "../../../type/dashboard-template.interface";
-import {WorkflowUtilService} from "../../../../workspace/service/workflow-graph/util/workflow-util.service";
 import {jsonCast} from "../../../../common/util/storage";
+import {checkIfGraphBroken} from "../../../../common/util/graph-check";
+import {NotificationService} from "../../../../common/service/notification/notification.service";
 
 export const TEMPLATE_BASE_URL = "template";
+export const TEMPLATE_PERSIST_URL = TEMPLATE_BASE_URL + "/persist";
 export const TEMPLATE_CREATE_URL = TEMPLATE_BASE_URL + "/create";
 export const TEMPLATE_LIST_URL = TEMPLATE_BASE_URL + "/list";
 export const TEMPLATE_DUPLICATE_URL = TEMPLATE_BASE_URL + "/duplicate";
@@ -27,7 +24,12 @@ export const DEFAULT_TEMPLATE_NAME = "Untitled template";
   providedIn: "root",
 })
 export class TemplateService {
-  constructor(private http: HttpClient) {}
+  private templatePersistFlag = true;
+
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService
+  ) {}
 
   public createTemplate(
     newTemplateContent: WorkflowContent,
@@ -66,6 +68,36 @@ export class TemplateService {
     return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_DELETE_URL}`, {
       tids: tids,
     });
+  }
+
+  public setTemplatePersistFlag(flag: boolean): void {
+    this.templatePersistFlag = flag;
+  }
+
+  public isTemplatePersistEnabled(): boolean {
+    return this.templatePersistFlag;
+  }
+
+  public persistTemplate(template: Template): Observable<Template> {
+    if (checkIfGraphBroken(template.content)) {
+      this.notificationService.error(
+        "Sorry! The template is broken and cannot be persisted. Please contact the system admin."
+      );
+    }
+
+    return this.http
+      .post<Template>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_PERSIST_URL}`, {
+        tid: template.tid,
+        name: template.name,
+        description: template.description,
+        content: JSON.stringify(template.content),
+        configurableParameters: template.configurableParameters,
+        // isPublic: template.isPublished,
+      })
+      .pipe(
+        filter((updatedTemplate: Template) => updatedTemplate != null),
+        map(TemplateService.parseTemplateInfo)
+      );
   }
 
   public getSizes(tids: number[]): Observable<Record<number, number>> {

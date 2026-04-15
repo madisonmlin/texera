@@ -28,11 +28,10 @@
 </div>
 <texera-workflow-editor></texera-workflow-editor>
 <texera-menu
+  *ngIf="mode"
   [writeAccess]="writeAccess"
   [pid]="pid"
-  [mode]="mode"
-  [workflowId]="wid"
-  [templateId]="tid">
+  [mode]="mode">
 </texera-menu>
 <texera-mini-map class="box"></texera-mini-map>
 <texera-left-panel> </texera-left-panel>

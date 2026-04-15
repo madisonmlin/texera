@@ -27,8 +27,7 @@ import { DashboardWorkflow } from "../../../dashboard/type/dashboard-workflow.in
 import { WorkflowUtilService } from "../../../workspace/service/workflow-graph/util/workflow-util.service";
 import { NotificationService } from "../notification/notification.service";
 import { SearchFilterParameters, toQueryStrings } from "../../../dashboard/type/search-filter-parameters";
-import { User } from "../../type/user";
-import { checkIfWorkflowBroken } from "../../util/workflow-check";
+import {checkIfGraphBroken} from "../../util/graph-check";
 
 export const WORKFLOW_BASE_URL = "workflow";
 export const WORKFLOW_PERSIST_URL = WORKFLOW_BASE_URL + "/persist";
@@ -67,7 +66,7 @@ export class WorkflowPersistService {
    * @param workflow
    */
   public persistWorkflow(workflow: Workflow): Observable<Workflow> {
-    if (checkIfWorkflowBroken(workflow)) {
+    if (checkIfGraphBroken(workflow.content)) {
       this.notificationService.error(
         "Sorry! The workflow is broken and cannot be persisted. Please contact the system admin."
       );

@@ -19,7 +19,7 @@
 
 import { DatePipe, Location } from "@angular/common";
 import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { Router } from "@angular/router";
+import {ActivatedRoute, Router} from "@angular/router";
 import { UserService } from "../../../common/service/user/user.service";
 import {
   DEFAULT_WORKFLOW_NAME,
@@ -81,6 +81,7 @@ import { MarkdownDescriptionComponent } from "../../../dashboard/component/user/
   styleUrls: ["menu.component.scss"],
 })
 export class MenuComponent implements OnInit, OnDestroy {
+  public entityId?: number = undefined;
   public executionState: ExecutionState; // set this to true when the workflow is started
   public ExecutionState = ExecutionState; // make Angular HTML access enum definition
   public ComputingUnitState = ComputingUnitState; // make Angular HTML access enum definition
@@ -96,8 +97,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   protected readonly DASHBOARD_USER_WORKFLOW = DASHBOARD_USER_WORKFLOW;
 
   @Input() public mode: "workflow" | "template" = "workflow";
-  @Input() public workflowId?: number;
-  @Input() public templateId?: number;
   @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
@@ -147,8 +146,11 @@ export class MenuComponent implements OnInit, OnDestroy {
     private panelService: PanelService,
     private computingUnitStatusService: ComputingUnitStatusService,
     protected config: GuiConfigService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute,
   ) {
+    this.entityId = Number(this.route.snapshot.params["id"]);
+
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
       .pipe(untilDestroyed(this))
@@ -213,14 +215,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.workflowResultExportService.resetFlags();
     this.computingUnitStatusSubscription.unsubscribe();
-  }
-
-  public get entityId(): number | undefined {
-    if (this.mode === "workflow") {
-      return this.workflowId;
-    } else if (this.mode === "template") {
-      return this.templateId;
-    }
   }
 
   private subscribeToComputingUnitSelection(): void {
@@ -298,7 +292,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       nzData: {
         writeAccess: this.writeAccess,
         type: "workflow",
-        id: this.workflowId,
+        id: this.entityId,
         allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
         inWorkspace: true,
       },
@@ -788,9 +782,10 @@ export class MenuComponent implements OnInit, OnDestroy {
       .workflowMetaDataChanged()
       .pipe(untilDestroyed(this))
       .subscribe(metadata => {
-        this.workflowId = metadata.wid;
-        this.templateId = this.mode === "template" ? this.entityId : undefined;
-        // consider adding the oprerator reconnect
+        if (this.mode === "workflow") {
+          this.entityId = metadata.wid;
+        }
+        // consider adding the operator reconnect
       });
   }
 

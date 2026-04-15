@@ -140,6 +140,46 @@ class TemplateResource extends LazyLogging {
     this.templateService.retrieveTemplate(tid);
   }
 
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/persist")
+  def persistTemplate(template: Template, @Auth sessionUser: SessionUser): Template = {
+    val user = sessionUser.getUser
+    if (user == org.apache.texera.web.auth.GuestAuthFilter.GUEST) {
+      throw new ForbiddenException("Guest user does not have access to db.")
+    }
+
+    if (templateOfUserExists(template.getTid, user.getUid)) {
+//      TemplateVersionResource.insertVersion(template, insertingNewTemplate = false)
+      templateDao.update(template)
+    } else {
+      if (!TemplateAccessResource.hasReadAccess(template.getTid, user.getUid)) {
+        // Check if this template exists in the database
+        val templateExistsInDb =
+          template.getTid != null && templateDao.existsById(template.getTid)
+        if (templateExistsInDb) {
+          // User trying to persist an existing template without access - reject
+          throw new ForbiddenException("No sufficient access privilege.")
+        }
+        // This is a new template being created (wid is null or doesn't exist in DB)
+        template.setTid(null)
+        insertTemplate(template, user)
+//        TemplateVersionResource.insertVersion(template, insertingNewTemplate = true)
+      } else if (TemplateAccessResource.hasWriteAccess(template.getTid, user.getUid)) {
+//        TemplateVersionResource.insertVersion(template, insertingNewTemplate = false)
+        // not owner but has write access
+        templateDao.update(template)
+      } else {
+        // not owner and no write access -> rejected
+        throw new ForbiddenException("No sufficient access privilege.")
+      }
+    }
+
+    val tid = template.getTid
+    templateDao.fetchOneByTid(tid)
+  }
+
   /**
    * This method duplicates the target template, the new template name is appended with `_copy`
    *
@@ -155,13 +195,13 @@ class TemplateResource extends LazyLogging {
                          @Auth sessionUser: SessionUser
                        ): List[DashboardTemplate] = {
 
-//    val user = sessionUser.getUser
-//    // do the permission check first
-//    for (tid <- templateIDs.tids) {
-//      if (!TemplateAccessResource.hasReadAccess(tid, user.getUid)) {
-//        throw new ForbiddenException("No sufficient access privilege.")
-//      }
-//    }
+    val user = sessionUser.getUser
+    // do the permission check first
+    for (tid <- templateIDs.tids) {
+      if (!TemplateAccessResource.hasReadAccess(tid, user.getUid)) {
+        throw new ForbiddenException("No sufficient access privilege.")
+      }
+    }
 
     val resultTemplates: ListBuffer[DashboardTemplate] = ListBuffer()
     // then start a transaction and do the duplication
