@@ -67,6 +67,7 @@ import * as Y from "yjs";
 import { OperatorSchema } from "src/app/workspace/types/operator-schema.interface";
 import { AttributeType, PortSchema } from "../../../types/workflow-compiling.interface";
 import { GuiConfigService } from "../../../../common/service/gui-config.service";
+import { ConfigurablePropertyWrapperComponent } from "./configurable-property-wrapper/configurable-property-wrapper.component";
 
 Quill.register("modules/cursors", QuillCursors);
 
@@ -94,6 +95,7 @@ Quill.register("modules/cursors", QuillCursors);
 })
 export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, OnDestroy, AfterViewChecked {
   @Input() currentOperatorId?: string;
+  @Input() mode?: "workflow" | "template" = "workflow";
 
   currentOperatorSchema?: OperatorSchema;
 
@@ -400,6 +402,34 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
         },
       };
 
+      // if (
+      //   typeof mappedField.key === "string" &&
+      //   schema.properties?.[mappedField.key] !== undefined
+      // ) {
+      //   mappedField.wrappers = [
+      //     ...(mappedField.wrappers ?? []),
+      //     "configurable-property-wrapper"
+      //   ];
+      //
+      //   const operator = this.workflowActionService
+      //     .getTexeraGraph()
+      //     .getOperator(this.currentOperatorId!);
+      //
+      //   const configurableSet = new Set(operator.configurableProperties ?? []);
+      //
+      //   mappedField.props = {
+      //     ...mappedField.props,
+      //
+      //     isTemplateMode: this.isTemplateMode(),
+      //     configurable: configurableSet.has(mappedField.key as string),
+      //
+      //     toggleConfigurable: (event: Event) => {
+      //       const checked = (event.target as HTMLInputElement).checked;
+      //       this.handleToggleConfigurable(mappedField.key as string, checked);
+      //     }
+      //   };
+      // }
+
       // Disable dummy operator for user
       if (mappedField.key === "dummyOperator") {
         mappedField.expressions = {
@@ -470,6 +500,29 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
           "operator",
           this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId).operatorType,
           this.currentOperatorId
+        );
+      }
+
+      if (
+        this.currentOperatorId !== undefined &&
+        typeof mappedField.key === "string" &&
+        schema.properties?.[mappedField.key] !== undefined
+      ) {
+        const operator = this.workflowActionService
+          .getTexeraGraph()
+          .getOperator(this.currentOperatorId!);
+
+        const configurableSet = new Set(operator.configurableProperties ?? []);
+
+        ConfigurablePropertyWrapperComponent.setupFieldConfig(
+          mappedField,
+          this.isTemplateMode(),
+          configurableSet.has(mappedField.key),
+          (event: Event) => {
+            const checked = (event.target as HTMLInputElement).checked;
+            this.handleToggleConfigurable(mappedField.key as string, checked);
+          },
+          mappedField.wrappers?.includes("preset-wrapper")
         );
       }
 
@@ -789,5 +842,30 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
       placeholder: "Start collaborating...",
       theme: "snow",
     });
+  }
+
+  handleToggleConfigurable(property: string, checked: boolean): void {
+    if (!this.currentOperatorId) return;
+
+    const operator = this.workflowActionService
+      .getTexeraGraph()
+      .getOperator(this.currentOperatorId);
+
+    const currentConfigurableProperties = new Set(operator.configurableProperties ?? []);
+
+    if (checked) {
+      currentConfigurableProperties.add(property);
+    } else {
+      currentConfigurableProperties.delete(property);
+    }
+
+    this.workflowActionService.setOperatorConfigurableProperties(
+      this.currentOperatorId,
+      Array.from(currentConfigurableProperties)
+    );
+  }
+
+  isTemplateMode(): boolean {
+    return this.mode === "template"
   }
 }

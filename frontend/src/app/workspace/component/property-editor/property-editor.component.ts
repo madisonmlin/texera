@@ -52,6 +52,7 @@ import { PanelService } from "../../service/panel/panel.service";
 export class PropertyEditorComponent implements OnInit, OnDestroy {
   @ViewChild("contentWrapper") contentWrapperRef!: ElementRef;
   @Input() dragBoundary: string = "texera-workspace";
+  @Input() mode?: "workflow" | "template" = "workflow"
   protected readonly window = window;
   id = -1;
   width = 260;
@@ -141,7 +142,10 @@ export class PropertyEditorComponent implements OnInit, OnDestroy {
 
         if (highlightedOperators.length === 1 && highlightLinks.length === 0 && highlightedPorts.length === 0) {
           this.currentComponent = OperatorPropertyEditFrameComponent;
-          this.componentInputs = { currentOperatorId: highlightedOperators[0] };
+          this.componentInputs = {
+            currentOperatorId: highlightedOperators[0],
+            mode: this.mode,
+          };
         } else if (highlightedPorts.length === 1 && highlightLinks.length === 0) {
           this.currentComponent = PortPropertyEditFrameComponent;
           this.componentInputs = { currentPortID: highlightedPorts[0] };

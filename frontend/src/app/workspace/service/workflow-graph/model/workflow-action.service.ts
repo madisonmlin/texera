@@ -459,6 +459,12 @@ export class WorkflowActionService {
     });
   }
 
+  public setOperatorConfigurableProperties(operatorID: string, newConfigurableProperties: string[]): void {
+    this.texeraGraph.bundleActions(() => {
+      this.texeraGraph.setOperatorConfigurableProperties(operatorID, newConfigurableProperties);
+    });
+  }
+
   public setPortProperty(operatorPortID: LogicalPort, newProperty: object) {
     this.texeraGraph.bundleActions(() => {
       this.texeraGraph.setPortProperty(operatorPortID, newProperty);

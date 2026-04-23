@@ -859,6 +859,23 @@ export class WorkflowGraph {
     updateYTypeFromObject(previousProperty, newProperty);
   }
 
+  public setOperatorConfigurableProperties(operatorID: string, newConfigurableProperties: string[]): void {
+    if (!this.hasOperator(operatorID)) {
+      throw new Error(`operator with ID ${operatorID} doesn't exist`);
+    }
+
+    const sharedOperator = this.getSharedOperatorType(operatorID);
+    let yArray = sharedOperator.get("configurableProperties");
+
+    if (!yArray) {
+      yArray = new Y.Array<string>();
+      sharedOperator.set("configurableProperties", yArray);
+    }
+
+    yArray.delete(0, yArray.length);
+    yArray.insert(0, newConfigurableProperties);
+  }
+
   public setPortProperty(operatorPortID: LogicalPort, newProperty: object) {
     newProperty = newProperty as PortProperty;
     if (!this.hasPort(operatorPortID))
