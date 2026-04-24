@@ -15,15 +15,18 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.{BadRequestException, Consumes, ForbiddenException, GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam, WebApplicationException}
 import scala.jdk.CollectionConverters._
 import org.apache.texera.web.resource.dashboard.user.template.TemplateResource._
-import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
+import org.apache.texera.web.resource.dashboard.user.workflow.{WorkflowAccessResource, WorkflowResource}
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.{DashboardWorkflow, WorkflowIDs, assignNewOperatorIds, context, workflowDao, workflowOfProjectDao, workflowOfProjectExists}
+import org.apache.texera.web.service.WorkflowPersistService
 
 import javax.annotation.security.RolesAllowed
 import org.apache.texera.web.service.{TemplateEntry, TemplateService}
 
 import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
+
+case class CreateFromWorkflowRequest(wid: Integer)
 
 object TemplateResource {
   final private lazy val context = SqlServer
@@ -68,6 +71,7 @@ object TemplateResource {
 @Path("/template")
 class TemplateResource extends LazyLogging {
   val templateService = new TemplateService(context);
+  val workflowPersistService = new WorkflowPersistService(context);
 
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
@@ -93,6 +97,26 @@ class TemplateResource extends LazyLogging {
       PrivilegeEnum.WRITE.toString,
       user.getUid
     )
+  }
+
+  @POST
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/create-from-workflow")
+  def createTemplateFromWorkflow(
+                                  request: CreateFromWorkflowRequest,
+                                  @Auth user: SessionUser
+                                ): DashboardTemplate = {
+    val workflow = this.workflowPersistService.retrieveWorkflow(request.wid, user);
+    val template = new Template(
+      null,                   // tid
+      workflow.name,          // name
+      workflow.description,   // description
+      workflow.content,       // content
+      null,                   // creationTime
+      null,                   // lastModifiedTime
+      ""                      // configurableParameters
+    )
+    createTemplate(template, user);
   }
 
   @POST

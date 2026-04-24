@@ -36,7 +36,7 @@ import org.apache.texera.web.resource.dashboard.hub.EntityType
 import org.apache.texera.web.resource.dashboard.hub.HubResource.recordCloneAction
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource._
-import org.apache.texera.web.service.WorkflowCreationService
+import org.apache.texera.web.service.WorkflowPersistService
 import org.jooq.impl.DSL.{groupConcatDistinct, noCondition}
 import org.jooq.{Condition, DSLContext, Record9, Result, SelectOnConditionStep}
 
@@ -256,7 +256,7 @@ object WorkflowResource {
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/workflow")
 class WorkflowResource extends LazyLogging {
-  val workflowCreationService = new WorkflowCreationService(context);
+  val workflowPersistService = new WorkflowPersistService(context);
 
   /**
     * This method returns all workflow IDs that the user has access to
@@ -390,21 +390,7 @@ class WorkflowResource extends LazyLogging {
       @PathParam("wid") wid: Integer,
       @Auth user: SessionUser
   ): WorkflowWithPrivilege = {
-    if (WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
-      val workflow = workflowDao.fetchOneByWid(wid)
-      WorkflowWithPrivilege(
-        workflow.getName,
-        workflow.getDescription,
-        workflow.getWid,
-        workflow.getContent,
-        workflow.getCreationTime,
-        workflow.getLastModifiedTime,
-        workflow.getIsPublic,
-        !WorkflowAccessResource.hasWriteAccess(wid, user.getUid)
-      )
-    } else {
-      throw new ForbiddenException("No sufficient access privilege.")
-    }
+    this.workflowPersistService.retrieveWorkflow(wid, user);
   }
 
   /**
@@ -563,7 +549,7 @@ class WorkflowResource extends LazyLogging {
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/create")
   def createWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): DashboardWorkflow = {
-    this.workflowCreationService.createWorkflow(workflow, sessionUser);
+    this.workflowPersistService.createWorkflow(workflow, sessionUser);
   }
 
   /**

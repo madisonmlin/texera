@@ -4,13 +4,13 @@ import org.apache.texera.auth.SessionUser
 import org.apache.texera.dao.jooq.generated.enums.PrivilegeEnum
 import org.apache.texera.dao.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfUserDao, WorkflowUserAccessDao}
 import org.apache.texera.dao.jooq.generated.tables.pojos.{User, Workflow, WorkflowOfUser, WorkflowUserAccess}
-import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
-import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowVersionResource
+import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.{DashboardWorkflow, WorkflowWithPrivilege, workflowDao}
+import org.apache.texera.web.resource.dashboard.user.workflow.{WorkflowAccessResource, WorkflowVersionResource}
 import org.jooq.DSLContext
 
-import javax.ws.rs.BadRequestException
+import javax.ws.rs.{BadRequestException, ForbiddenException}
 
-class WorkflowCreationService(context: DSLContext) {
+class WorkflowPersistService(context: DSLContext) {
   final private lazy val workflowDao = new WorkflowDao(context.configuration)
   final private lazy val workflowOfUserDao = new WorkflowOfUserDao(
     context.configuration
@@ -46,6 +46,24 @@ class WorkflowCreationService(context: DSLContext) {
         List[Integer](),
         user.getUid
       )
+    }
+  }
+
+  def retrieveWorkflow(wid: Integer, sessionUser: SessionUser): WorkflowWithPrivilege = {
+    if (WorkflowAccessResource.hasReadAccess(wid, sessionUser.getUid)) {
+      val workflow = workflowDao.fetchOneByWid(wid)
+      WorkflowWithPrivilege(
+        workflow.getName,
+        workflow.getDescription,
+        workflow.getWid,
+        workflow.getContent,
+        workflow.getCreationTime,
+        workflow.getLastModifiedTime,
+        workflow.getIsPublic,
+        !WorkflowAccessResource.hasWriteAccess(wid, sessionUser.getUid)
+      )
+    } else {
+      throw new ForbiddenException("No sufficient access privilege.")
     }
   }
 }

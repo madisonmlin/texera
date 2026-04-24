@@ -13,6 +13,7 @@ import {NotificationService} from "../../../../common/service/notification/notif
 export const TEMPLATE_BASE_URL = "template";
 export const TEMPLATE_PERSIST_URL = TEMPLATE_BASE_URL + "/persist";
 export const TEMPLATE_CREATE_URL = TEMPLATE_BASE_URL + "/create";
+export const TEMPLATE_CREATE_FROM_WORKFLOW_URL = TEMPLATE_BASE_URL + "/create-from-workflow";
 export const TEMPLATE_LIST_URL = TEMPLATE_BASE_URL + "/list";
 export const TEMPLATE_DUPLICATE_URL = TEMPLATE_BASE_URL + "/duplicate";
 export const TEMPLATE_DELETE_URL = TEMPLATE_BASE_URL + "/delete";
@@ -43,6 +44,14 @@ export class TemplateService {
       configurableParameters: newTemplateConfigurableParameters,
       })
       .pipe(filter((createdTemplate: DashboardTemplate) => createdTemplate != null));
+  }
+
+  public createTemplateFromWorkflow(wid: number): Observable<DashboardTemplate> {
+    return this.http
+      .post<DashboardTemplate>(`${AppSettings.getApiEndpoint()}/${TEMPLATE_CREATE_FROM_WORKFLOW_URL}`, {
+        wid: wid
+      })
+      .pipe(filter((template: DashboardTemplate) => template != null));
   }
 
   public getTemplate(): Observable<{ tid: string, name: string }[]> {

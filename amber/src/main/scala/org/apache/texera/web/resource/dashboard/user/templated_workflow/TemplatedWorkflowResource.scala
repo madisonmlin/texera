@@ -9,7 +9,7 @@ import org.apache.texera.dao.jooq.generated.tables.daos.WorkflowOfTemplateDao
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.{POST, Path, Produces, QueryParam}
-import org.apache.texera.web.service.{TemplateService, WorkflowCreationService}
+import org.apache.texera.web.service.{TemplateService, WorkflowPersistService}
 import org.apache.texera.dao.jooq.generated.tables.pojos._
 import org.apache.texera.web.resource.dashboard.user.templated_workflow.TemplatedWorkflowResource._
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -68,7 +68,7 @@ class TemplatedWorkflowResource extends LazyLogging{
     .createDSLContext()
 
   private val templateService = new TemplateService(context)
-  private val workflowCreationService = new WorkflowCreationService(context)
+  private val workflowPersistService = new WorkflowPersistService(context)
 
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
@@ -88,7 +88,7 @@ class TemplatedWorkflowResource extends LazyLogging{
       null,                                // lastModifiedTime
       false                                // isPublic
     )
-    val workflow = workflowCreationService.createWorkflow(templated_workflow, user, privilege=PrivilegeEnum.READ);
+    val workflow = workflowPersistService.createWorkflow(templated_workflow, user, privilege=PrivilegeEnum.READ);
     val wid = workflow.workflow.getWid;
     val mapper = new ObjectMapper().registerModule(DefaultScalaModule);
     val parameters = mapper.writeValueAsString(request.parameters);

@@ -54,6 +54,7 @@ import {
 } from "../../../../app-routing.constant";
 import { isDefined } from "../../../../common/util/predicate";
 import {Router} from "@angular/router";
+import {TemplateService} from "../../../service/user/template/template.service";
 
 @UntilDestroy()
 @Component({
@@ -105,6 +106,7 @@ export class ListItemComponent implements OnChanges {
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
     private datasetService: DatasetService,
+    private templateService: TemplateService,
     private modal: NzModalService,
     private hubService: HubService,
     private downloadService: DownloadService,
@@ -383,7 +385,17 @@ export class ListItemComponent implements OnChanges {
     }
   }
 
-  openCreateTemplateFromWorkflowPage(wid: number | undefined): void {}
+  openCreateTemplateFromWorkflowPage(wid: number | undefined): void {
+    if (wid === undefined) {
+      return;
+    }
+
+    this.templateService.createTemplateFromWorkflow(wid)
+      .pipe(untilDestroyed(this))
+      .subscribe((template) => {
+        this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/${template.template.tid}`])
+    })
+  }
 
   openCreateWorkflowFromTemplatePage(tid: number | undefined): void {
     this.router.navigate([`${DASHBOARD_USER_TEMPLATED_WORKFLOW}/${tid}`]);
