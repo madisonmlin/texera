@@ -50,7 +50,11 @@ import { ResultExportationComponent } from "../result-exportation/result-exporta
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
 import { PanelService } from "../../service/panel/panel.service";
-import { DASHBOARD_USER_WORKFLOW } from "../../../app-routing.constant";
+import {
+  DASHBOARD_USER_TEMPLATE,
+  DASHBOARD_USER_TEMPLATE_FROM_WORKFLOW,
+  DASHBOARD_USER_WORKFLOW
+} from "../../../app-routing.constant";
 import { ComputingUnitStatusService } from "../../service/computing-unit-status/computing-unit-status.service";
 import { ComputingUnitState } from "../../types/computing-unit-connection.interface";
 import { ComputingUnitSelectionComponent } from "../power-button/computing-unit-selection.component";
@@ -658,7 +662,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   public persistWorkflow(): void {
-    if (this.mode === "template") {
+    if (this.isTemplateMode()) {
       return;
     }
 
@@ -782,7 +786,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       .workflowMetaDataChanged()
       .pipe(untilDestroyed(this))
       .subscribe(metadata => {
-        if (this.mode === "workflow") {
+        if (this.isWorkflowMode()) {
           this.entityId = metadata.wid;
         }
         // consider adding the operator reconnect
@@ -820,6 +824,14 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.currentExecutionName || "Untitled Execution",
       this.config.env.workflowEmailNotificationEnabled
     );
+  }
+
+  private isWorkflowMode(): boolean {
+    return this.mode === "workflow";
+  }
+
+  private isTemplateMode(): boolean {
+    return this.mode === "template";
   }
 
   protected readonly Privilege = Privilege;
