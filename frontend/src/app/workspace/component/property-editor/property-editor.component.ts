@@ -52,7 +52,7 @@ import { PanelService } from "../../service/panel/panel.service";
 export class PropertyEditorComponent implements OnInit, OnDestroy {
   @ViewChild("contentWrapper") contentWrapperRef!: ElementRef;
   @Input() dragBoundary: string = "texera-workspace";
-  @Input() mode?: "workflow" | "template" = "workflow"
+  @Input() mode?: "workflow" | "template" | "templateFromWorkflow" = "workflow"
   protected readonly window = window;
   id = -1;
   width = 260;

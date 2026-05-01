@@ -48,11 +48,16 @@ import { WorkflowMetadata } from "src/app/dashboard/type/workflow-metadata.inter
 import { EntityType, HubService } from "../../hub/service/hub.service";
 import { THROTTLE_TIME_MS } from "../../hub/component/workflow/detail/hub-workflow-detail.component";
 import { WorkflowCompilingService } from "../service/compile-workflow/workflow-compiling.service";
-import {DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_WORKSPACE} from "../../app-routing.constant";
+import {
+  DASHBOARD_USER_TEMPLATE,
+  DASHBOARD_USER_TEMPLATE_FROM_WORKFLOW,
+  DASHBOARD_USER_WORKSPACE
+} from "../../app-routing.constant";
 import { GuiConfigService } from "../../common/service/gui-config.service";
 import { checkIfGraphBroken } from "../../common/util/graph-check";
 import {TemplateService} from "../../dashboard/service/user/template/template.service";
 import {Template} from "../../common/type/template";
+import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -72,7 +77,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public isLoading: boolean = false;
   public tid?: number = undefined;
   @Input() wid?: number = undefined;
-  @Input() mode?: "workflow" | "template";
+  @Input() mode?: "workflow" | "template" | "templateFromWorkflow";
   @Input() isEmbedded: boolean = false;
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
 
@@ -121,7 +126,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      */
     this.mode = this.mode ?? this.route.snapshot.data["type"];
     const id = Number(this.route.snapshot.params.id);
-    this.wid = this.mode === "workflow" ? this.wid ?? id : undefined;
+    this.wid = (this.mode === "workflow" || this.mode === "templateFromWorkflow") ? this.wid ?? id : undefined;
     this.tid = this.mode === "template" ? id : undefined;
     this.pid = parseInt(this.route.snapshot.queryParams.pid) || undefined;
 
@@ -200,6 +205,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       .subscribe(
         (workflow: Workflow) => {
           this.loadWorkflowIntoWorkspace(workflow);
+          console.log(workflow)
         },
         () => {
           this.workflowActionService.resetAsNewWorkflow();
@@ -249,10 +255,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       this.workflowActionService.setNewSharedModel(this.wid, this.userService.getCurrentUser());
     } else if (this.isTemplateMode()) {
       this.workflowActionService.setNewSharedModel(this.tid, this.userService.getCurrentUser());
+    } else if (this.isTemplateFromWorkflowMode()) {
+      this.workflowActionService.setNewSharedModel(undefined, this.userService.getCurrentUser());
     }
 
-    // remember URL fragment
-    const fragment = this.route.snapshot.fragment;
     // load the fetched workflow
     this.workflowActionService.reloadWorkflow(workflow);
 
@@ -261,6 +267,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     } else {
       this.workflowActionService.enableWorkflowModification();
     }
+
+    // remember URL fragment
+    const fragment = this.route.snapshot.fragment;
+
     // set the URL fragment to previous value
     // because reloadWorkflow will highlight/unhighlight all elements
     // which will change the URL fragment
@@ -331,7 +341,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             .userChanged()
             .pipe(untilDestroyed(this))
             .subscribe(() => {
-              if (this.isWorkflowMode()) {
+              if (this.isWorkflowMode() || this.isTemplateFromWorkflowMode()) {
                 this.loadWorkflowWithId(id);
               } else if (this.isTemplateMode()) {
                 this.loadTemplateWithId(id);
@@ -379,9 +389,11 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   private persistEnabled(): boolean {
     if (this.isWorkflowMode()) {
       return this.workflowPersistService.isWorkflowPersistEnabled();
-    } else {
+    } else if (this.isTemplateMode()) {
       return this.templateService.isTemplatePersistEnabled();
     }
+
+    return false;
   }
 
   private persistEntity(): Observable<Template | Workflow> {
@@ -433,5 +445,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   private isTemplateMode(): boolean {
     return this.mode === "template";
+  }
+
+  private isTemplateFromWorkflowMode(): boolean {
+    return this.mode === "templateFromWorkflow";
   }
 }

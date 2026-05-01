@@ -149,6 +149,15 @@
             nz-icon
             nzType="info-circle"></i>
         </button>
+        <button
+          *ngIf="mode === 'workflow'"
+          (click)="onClickOpenTemplateCreation()"
+          nz-button
+          title="create template">
+          <i
+            nz-icon
+            nzType="experiment"></i>
+        </button>
       </nz-button-group>
       <ng-template #utilities>
         <nz-button-group>

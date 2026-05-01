@@ -100,7 +100,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   public showStatus: boolean = false;
   protected readonly DASHBOARD_USER_WORKFLOW = DASHBOARD_USER_WORKFLOW;
 
-  @Input() public mode: "workflow" | "template" = "workflow";
+  @Input() public mode: "workflow" | "template" | "templateFromWorkflow" = "workflow";
   @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
@@ -654,6 +654,15 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
   }
 
+  public onClickOpenTemplateCreation(): void {
+    const workflow = this.workflowActionService.getWorkflow()
+    if (!workflow) {
+      return;
+    }
+
+    this.router.navigate([`${DASHBOARD_USER_TEMPLATE_FROM_WORKFLOW}/${workflow.wid}`])
+  }
+
   /**
    * Returns true if there's any operator on the graph; false otherwise
    */
@@ -662,7 +671,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   public persistWorkflow(): void {
-    if (this.isTemplateMode()) {
+    if (!this.isWorkflowMode()) {
       return;
     }
 
@@ -828,10 +837,6 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   private isWorkflowMode(): boolean {
     return this.mode === "workflow";
-  }
-
-  private isTemplateMode(): boolean {
-    return this.mode === "template";
   }
 
   protected readonly Privilege = Privilege;
