@@ -385,18 +385,6 @@ export class ListItemComponent implements OnChanges {
     }
   }
 
-  openCreateTemplateFromWorkflowPage(wid: number | undefined): void {
-    if (wid === undefined) {
-      return;
-    }
-
-    this.templateService.createTemplateFromWorkflow(wid)
-      .pipe(untilDestroyed(this))
-      .subscribe((template) => {
-        this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/${template.template.tid}`])
-    })
-  }
-
   openCreateWorkflowFromTemplatePage(tid: number | undefined): void {
     this.router.navigate([`${DASHBOARD_USER_TEMPLATED_WORKFLOW}/${tid}`]);
   }

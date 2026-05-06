@@ -667,11 +667,15 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   public onClickOpenTemplateCreation(): void {
     const workflow = this.workflowActionService.getWorkflow()
-    if (!workflow) {
+    if (!workflow.wid) {
       return;
     }
 
-    this.router.navigate([`${DASHBOARD_USER_TEMPLATE_FROM_WORKFLOW}/${workflow.wid}`])
+    this.templateService.createTemplateFromWorkflow(workflow.wid)
+      .pipe(untilDestroyed(this))
+      .subscribe((template) => {
+        this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/${template.template.tid}`])
+      })
   }
 
   /**

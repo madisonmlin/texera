@@ -185,16 +185,6 @@
     *ngIf="isPrivateSearch"
     class="button-group">
     <button
-      *ngIf="entry.type==='workflow'"
-      nz-button
-      nzType="text"
-      title="Create Template"
-      (click)="openCreateTemplateFromWorkflowPage(this.entry.id)">
-      <i
-        nz-icon
-        nzType="experiment"></i>
-    </button>
-    <button
       *ngIf="entry.type==='template'"
       nz-button
       nzType="text"
