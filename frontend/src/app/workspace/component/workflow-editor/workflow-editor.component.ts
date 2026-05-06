@@ -85,7 +85,7 @@ export const MAIN_CANVAS = {
   styleUrls: ["workflow-editor.component.scss"],
 })
 export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy {
-  @Input() mode?: "workflow" | "template" | "templateFromWorkflow" = "workflow";
+  @Input() mode?: "workflow" | "template" = "workflow";
   editor!: HTMLElement;
   editorWrapper!: HTMLElement;
   paper!: joint.dia.Paper;

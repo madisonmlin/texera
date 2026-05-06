@@ -101,7 +101,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   public showStatus: boolean = false;
   protected readonly DASHBOARD_USER_WORKFLOW = DASHBOARD_USER_WORKFLOW;
 
-  @Input() public mode: "workflow" | "template" | "templateFromWorkflow" = "workflow";
+  @Input() public mode: "workflow" | "template" = "workflow";
   @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
@@ -686,7 +686,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   public persistWorkflow(): void {
-    if (!this.isWorkflowMode()) {
+    if (!this.isWorkflowMode) {
       return;
     }
 
@@ -819,7 +819,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       .workflowMetaDataChanged()
       .pipe(untilDestroyed(this))
       .subscribe(metadata => {
-        if (this.isWorkflowMode()) {
+        if (this.isWorkflowMode) {
           this.entityId = metadata.wid;
         }
         // consider adding the operator reconnect
@@ -859,8 +859,28 @@ export class MenuComponent implements OnInit, OnDestroy {
     );
   }
 
-  private isWorkflowMode(): boolean {
+  public get isWorkflowMode(): boolean {
     return this.mode === "workflow";
+  }
+
+  public get isTemplateMode(): boolean {
+    return this.mode === "template";
+  }
+
+  public get showExecutionButtons(): boolean {
+    return !this.isTemplateMode;
+  }
+
+  public get showEditingButtons(): boolean {
+    return !this.isTemplateMode;
+  }
+
+  public get showCreateNewButton(): boolean {
+    return !this.isTemplateMode
+  }
+
+  public get showTemplateCreationButton(): boolean {
+    return this.isWorkflowMode
   }
 
   protected readonly Privilege = Privilege;

@@ -73,7 +73,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public isLoading: boolean = false;
   public tid?: number = undefined;
   @Input() wid?: number = undefined;
-  @Input() mode?: "workflow" | "template" | "templateFromWorkflow";
+  @Input() mode?: "workflow" | "template";
   @Input() isEmbedded: boolean = false;
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
 
@@ -122,7 +122,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      */
     this.mode = this.mode ?? this.route.snapshot.data["type"];
     const id = Number(this.route.snapshot.params.id);
-    this.wid = (this.mode === "workflow" || this.mode === "templateFromWorkflow") ? this.wid ?? id : undefined;
+    this.wid = (this.mode === "workflow") ? this.wid ?? id : undefined;
     this.tid = this.mode === "template" ? id : undefined;
     this.pid = parseInt(this.route.snapshot.queryParams.pid) || undefined;
 
@@ -144,7 +144,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      * WorkflowActionService is the single source of the workflow representation. WorkflowPersistService reflects
      * changes from WorkflowActionService.
      */
-    if (this.isTemplateFromWorkflowMode()) {
+    if (this.isTemplateMode()) {
       this.workflowActionService.setWorkflowDisplayMode(WorkflowDisplayMode.READONLY)
     }
 
@@ -254,15 +254,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     if (this.isWorkflowMode()) {
       this.workflowActionService.setNewSharedModel(this.wid, this.userService.getCurrentUser());
     } else if (this.isTemplateMode()) {
-      this.workflowActionService.setNewSharedModel(this.tid, this.userService.getCurrentUser());
-    } else if (this.isTemplateFromWorkflowMode()) {
       this.workflowActionService.setNewSharedModel(undefined, this.userService.getCurrentUser());
     }
 
     // load the fetched workflow
     this.workflowActionService.reloadWorkflow(workflow);
 
-    if (workflow.readonly || this.isTemplateFromWorkflowMode()) {
+    if (workflow.readonly || this.isTemplateMode()) {
       this.workflowActionService.disableWorkflowModification();
     } else {
       this.workflowActionService.enableWorkflowModification();
@@ -341,7 +339,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             .userChanged()
             .pipe(untilDestroyed(this))
             .subscribe(() => {
-              if (this.isWorkflowMode() || this.isTemplateFromWorkflowMode()) {
+              if (this.isWorkflowMode()) {
                 this.loadWorkflowWithId(id);
               } else if (this.isTemplateMode()) {
                 this.loadTemplateWithId(id);
@@ -445,9 +443,5 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   private isTemplateMode(): boolean {
     return this.mode === "template";
-  }
-
-  private isTemplateFromWorkflowMode(): boolean {
-    return this.mode === "templateFromWorkflow";
   }
 }

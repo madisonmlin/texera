@@ -167,11 +167,6 @@ routes.push({
           component: TemplatedWorkflowCreationComponent,
           data: { type: "template" },
         },
-        {
-          path: "template-from-workflow/:id",
-          component: WorkspaceComponent,
-          data: { type: "templateFromWorkflow" }
-        }
       ],
     },
     {

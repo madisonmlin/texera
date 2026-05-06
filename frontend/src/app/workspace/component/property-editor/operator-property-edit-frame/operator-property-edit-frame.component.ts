@@ -95,7 +95,7 @@ Quill.register("modules/cursors", QuillCursors);
 })
 export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, OnDestroy, AfterViewChecked {
   @Input() currentOperatorId?: string;
-  @Input() mode?: "workflow" | "template" | "templateFromWorkflow" = "workflow";
+  @Input() mode?: "workflow" | "template" = "workflow";
 
   currentOperatorSchema?: OperatorSchema;
 
@@ -516,7 +516,7 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
 
         ConfigurablePropertyWrapperComponent.setupFieldConfig(
           mappedField,
-          this.isTemplateMode() || this.isTemplateFromWorkflowMode(),
+          this.isTemplateMode(),
           configurableSet.has(mappedField.key),
           (event: Event) => {
             const checked = (event.target as HTMLInputElement).checked;
@@ -867,9 +867,5 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
 
   isTemplateMode(): boolean {
     return this.mode === "template"
-  }
-
-  private isTemplateFromWorkflowMode(): boolean {
-    return this.mode === "templateFromWorkflow";
   }
 }
