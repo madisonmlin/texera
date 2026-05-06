@@ -43,7 +43,7 @@
             (change)="onWorkflowNameChange()"
             [(ngModel)]="currentWorkflowName"
             class="workflow-name"
-            placeholder="Untitled Workflow" />
+            [placeholder]="'Untitled ' + entityNameCapitalized" />
           <span *ngIf="displayParticularWorkflowVersion"> {{particularVersionDate}} </span>
         </label>
         <button
@@ -85,7 +85,7 @@
       <nz-button-group
         id="user-buttons"
         *ngIf="!displayParticularWorkflowVersion">
-        <a [routerLink]="DASHBOARD_USER_WORKFLOW">
+        <a [routerLink]="dashboardLink">
           <button
             nz-button
             title="dashboard">
@@ -124,6 +124,7 @@
             nzType="delete"></i>
         </button>
         <nz-upload
+          *ngIf="showEditingButtons"
           [nzDisabled]="!isWorkflowModifiable"
           [nzBeforeUpload]="onClickImportWorkflow">
           <button
@@ -138,7 +139,7 @@
         <button
           (click)="onClickExportWorkflow()"
           nz-button
-          title="export workflow">
+          [title]="'export ' + entityName">
           <i
             nz-icon
             nzType="download"></i>
@@ -153,7 +154,7 @@
         </button>
         <button
           *ngIf="showTemplateCreationButton"
-          (click)="onClickOpenTemplateCreation()"
+          (click)="onClickCreateTemplateFromWorkflow()"
           nz-button
           title="create template">
           <i

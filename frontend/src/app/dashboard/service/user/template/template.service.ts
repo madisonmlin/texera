@@ -19,7 +19,7 @@ export const TEMPLATE_DUPLICATE_URL = TEMPLATE_BASE_URL + "/duplicate";
 export const TEMPLATE_DELETE_URL = TEMPLATE_BASE_URL + "/delete";
 export const TEMPLATE_SIZE = TEMPLATE_BASE_URL + "/size";
 
-export const DEFAULT_TEMPLATE_NAME = "Untitled template";
+export const DEFAULT_TEMPLATE_NAME = "Untitled Template";
 
 @Injectable({
   providedIn: "root",

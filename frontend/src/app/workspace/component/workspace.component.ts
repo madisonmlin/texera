@@ -53,7 +53,6 @@ import {GuiConfigService} from "../../common/service/gui-config.service";
 import {checkIfGraphBroken} from "../../common/util/graph-check";
 import {TemplateService} from "../../dashboard/service/user/template/template.service";
 import {Template} from "../../common/type/template";
-import {WorkflowDisplayMode} from "../../dashboard/type/workflow-display-mode";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -144,9 +143,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      * WorkflowActionService is the single source of the workflow representation. WorkflowPersistService reflects
      * changes from WorkflowActionService.
      */
-    if (this.isTemplateMode()) {
-      this.workflowActionService.setWorkflowDisplayMode(WorkflowDisplayMode.READONLY)
-    }
 
     // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
     this.workflowActionService.resetAsNewWorkflow();

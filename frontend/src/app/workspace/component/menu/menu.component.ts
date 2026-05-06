@@ -62,7 +62,7 @@ import { GuiConfigService } from "../../../common/service/gui-config.service";
 import { DashboardWorkflowComputingUnit } from "../../types/workflow-computing-unit";
 import { Privilege } from "../../../dashboard/type/share-access.interface";
 import { MarkdownDescriptionComponent } from "../../../dashboard/component/user/markdown-description/markdown-description.component";
-import {TemplateService} from "../../../dashboard/service/user/template/template.service";
+import {DEFAULT_TEMPLATE_NAME, TemplateService} from "../../../dashboard/service/user/template/template.service";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -590,7 +590,7 @@ export class MenuComponent implements OnInit, OnDestroy {
           workflowName = file.name.substring(0, fileExtensionIndex);
         }
         if (workflowName.trim() === "") {
-          workflowName = DEFAULT_WORKFLOW_NAME;
+          workflowName = this.isWorkflowMode ? DEFAULT_WORKFLOW_NAME : DEFAULT_TEMPLATE_NAME;
         }
 
         const workflow: Workflow = {
@@ -635,7 +635,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     const currentDescription = currentWorkflow.description ?? "";
 
     const modalRef = this.modalService.create<MarkdownDescriptionComponent>({
-      nzTitle: "Edit Workflow Description",
+      nzTitle: this.isWorkflowMode ? "Edit Workflow Description" : "Edit Template Description",
       nzContent: MarkdownDescriptionComponent,
       nzData: {
         description: currentDescription,
@@ -665,7 +665,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
   }
 
-  public onClickOpenTemplateCreation(): void {
+  public onClickCreateTemplateFromWorkflow(): void {
     const workflow = this.workflowActionService.getWorkflow()
     if (!workflow.wid) {
       return;
@@ -712,7 +712,10 @@ export class MenuComponent implements OnInit, OnDestroy {
    * Handler for changing workflow name input box, updates the cachedWorkflow and persist to database.
    */
   onWorkflowNameChange() {
-    this.workflowActionService.setWorkflowName(this.currentWorkflowName);
+    this.workflowActionService.setWorkflowName(
+      this.currentWorkflowName,
+      this.isTemplateMode ? DEFAULT_TEMPLATE_NAME : DEFAULT_WORKFLOW_NAME
+    );
     if (this.userService.isLogin()) {
       this.persistWorkflow();
     }
@@ -721,15 +724,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   onClickCreateNewWorkflow() {
     this.workflowActionService.resetAsNewWorkflow();
     this.location.go("/");
-  }
-
-  onClickCreateNewTemplate(): void {
-    const workflow = this.workflowActionService.getWorkflow();
-    this.templateService.createTemplate(workflow.content, workflow.name)
-      .pipe(untilDestroyed(this))
-      .subscribe(() => {
-        this.router.navigate([DASHBOARD_USER_TEMPLATE])
-      });
   }
 
   registerWorkflowMetadataDisplayRefresh() {
@@ -857,6 +851,22 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.currentExecutionName || "Untitled Execution",
       this.config.env.workflowEmailNotificationEnabled
     );
+  }
+
+  public get entityName(): string {
+    return this.mode;
+  }
+
+  public get entityNameCapitalized(): string {
+    return this.entityName.charAt(0).toUpperCase() + this.entityName.slice(1);
+  }
+
+  public get dashboardLink(): string {
+    if (this.isWorkflowMode) {
+      return DASHBOARD_USER_WORKFLOW
+    } else {
+      return DASHBOARD_USER_TEMPLATE
+    }
   }
 
   public get isWorkflowMode(): boolean {
