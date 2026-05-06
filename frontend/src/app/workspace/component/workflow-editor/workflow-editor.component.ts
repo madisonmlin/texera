@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
+import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, Input, OnDestroy, OnInit} from "@angular/core";
 import { fromEvent, merge, Subject } from "rxjs";
 import { NzModalCommentBoxComponent } from "./comment-box-modal/nz-modal-comment-box.component";
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
@@ -85,6 +85,7 @@ export const MAIN_CANVAS = {
   styleUrls: ["workflow-editor.component.scss"],
 })
 export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy {
+  @Input() mode?: "workflow" | "template" | "templateFromWorkflow" = "workflow";
   editor!: HTMLElement;
   editorWrapper!: HTMLElement;
   paper!: joint.dia.Paper;
@@ -213,10 +214,12 @@ export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   private initializeJointPaper(): void {
+    const bgColor = this.isWorkflowMode() ? "#F6F6F6" : "#ecf2ff"
+
     // attach the JointJS graph (model) to the paper (view)
     this.paper = this.wrapper.attachMainJointPaper({
       el: this.editor,
-      background: { color: "#F6F6F6" },
+      background: { color: bgColor },
       // enable jointjs feature that automatically snaps a link to the closest port with a radius of 30px
       snapLinks: { radius: 40 },
       // disable jointjs default action that can make a link not connect to an operator
@@ -1553,5 +1556,9 @@ export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     return WorkflowEditorComponent.RemoveButton;
+  }
+
+  private isWorkflowMode(): boolean {
+    return this.mode === "workflow"
   }
 }

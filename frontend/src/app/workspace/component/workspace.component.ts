@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import { Location } from "@angular/common";
+import {Location} from "@angular/common";
 import {
   AfterViewInit,
   Component,
@@ -28,36 +28,32 @@ import {
   ViewChild,
   ViewContainerRef
 } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
-import { UserService } from "../../common/service/user/user.service";
-import { WorkflowPersistService } from "../../common/service/workflow-persist/workflow-persist.service";
-import { Workflow } from "../../common/type/workflow";
-import { OperatorMetadataService } from "../service/operator-metadata/operator-metadata.service";
-import { UndoRedoService } from "../service/undo-redo/undo-redo.service";
-import { WorkflowActionService } from "../service/workflow-graph/model/workflow-action.service";
-import { NzMessageService } from "ng-zorro-antd/message";
-import { debounceTime, distinctUntilChanged, filter, switchMap, throttleTime } from "rxjs/operators";
-import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import {ActivatedRoute, Router} from "@angular/router";
+import {UserService} from "../../common/service/user/user.service";
+import {WorkflowPersistService} from "../../common/service/workflow-persist/workflow-persist.service";
+import {Workflow} from "../../common/type/workflow";
+import {OperatorMetadataService} from "../service/operator-metadata/operator-metadata.service";
+import {UndoRedoService} from "../service/undo-redo/undo-redo.service";
+import {WorkflowActionService} from "../service/workflow-graph/model/workflow-action.service";
+import {NzMessageService} from "ng-zorro-antd/message";
+import {debounceTime, distinctUntilChanged, filter, switchMap, throttleTime} from "rxjs/operators";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {Observable, of} from "rxjs";
-import { isDefined } from "../../common/util/predicate";
-import { NotificationService } from "src/app/common/service/notification/notification.service";
-import { WorkflowConsoleService } from "../service/workflow-console/workflow-console.service";
-import { OperatorReuseCacheStatusService } from "../service/workflow-status/operator-reuse-cache-status.service";
-import { CodeEditorService } from "../service/code-editor/code-editor.service";
-import { WorkflowMetadata } from "src/app/dashboard/type/workflow-metadata.interface";
-import { EntityType, HubService } from "../../hub/service/hub.service";
-import { THROTTLE_TIME_MS } from "../../hub/component/workflow/detail/hub-workflow-detail.component";
-import { WorkflowCompilingService } from "../service/compile-workflow/workflow-compiling.service";
-import {
-  DASHBOARD_USER_TEMPLATE,
-  DASHBOARD_USER_TEMPLATE_FROM_WORKFLOW,
-  DASHBOARD_USER_WORKSPACE
-} from "../../app-routing.constant";
-import { GuiConfigService } from "../../common/service/gui-config.service";
-import { checkIfGraphBroken } from "../../common/util/graph-check";
+import {isDefined} from "../../common/util/predicate";
+import {NotificationService} from "src/app/common/service/notification/notification.service";
+import {WorkflowConsoleService} from "../service/workflow-console/workflow-console.service";
+import {OperatorReuseCacheStatusService} from "../service/workflow-status/operator-reuse-cache-status.service";
+import {CodeEditorService} from "../service/code-editor/code-editor.service";
+import {WorkflowMetadata} from "src/app/dashboard/type/workflow-metadata.interface";
+import {EntityType, HubService} from "../../hub/service/hub.service";
+import {THROTTLE_TIME_MS} from "../../hub/component/workflow/detail/hub-workflow-detail.component";
+import {WorkflowCompilingService} from "../service/compile-workflow/workflow-compiling.service";
+import {DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_WORKSPACE} from "../../app-routing.constant";
+import {GuiConfigService} from "../../common/service/gui-config.service";
+import {checkIfGraphBroken} from "../../common/util/graph-check";
 import {TemplateService} from "../../dashboard/service/user/template/template.service";
 import {Template} from "../../common/type/template";
-import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
+import {WorkflowDisplayMode} from "../../dashboard/type/workflow-display-mode";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -148,6 +144,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      * WorkflowActionService is the single source of the workflow representation. WorkflowPersistService reflects
      * changes from WorkflowActionService.
      */
+    if (this.isTemplateFromWorkflowMode()) {
+      this.workflowActionService.setWorkflowDisplayMode(WorkflowDisplayMode.READONLY)
+    }
+
     // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
     this.workflowActionService.resetAsNewWorkflow();
     // if an id is present in the route, display loading spinner immediately while loading
@@ -262,7 +262,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     // load the fetched workflow
     this.workflowActionService.reloadWorkflow(workflow);
 
-    if (workflow.readonly) {
+    if (workflow.readonly || this.isTemplateFromWorkflowMode()) {
       this.workflowActionService.disableWorkflowModification();
     } else {
       this.workflowActionService.enableWorkflowModification();

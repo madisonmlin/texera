@@ -62,6 +62,7 @@ import { GuiConfigService } from "../../../common/service/gui-config.service";
 import { DashboardWorkflowComputingUnit } from "../../types/workflow-computing-unit";
 import { Privilege } from "../../../dashboard/type/share-access.interface";
 import { MarkdownDescriptionComponent } from "../../../dashboard/component/user/markdown-description/markdown-description.component";
+import {TemplateService} from "../../../dashboard/service/user/template/template.service";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -137,6 +138,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     public workflowVersionService: WorkflowVersionService,
+    public templateService: TemplateService,
     public userService: UserService,
     private datePipe: DatePipe,
     public workflowResultExportService: WorkflowResultExportService,
@@ -436,6 +438,15 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.workflowActionService.addCommentBox(this.workflowUtilService.getNewCommentBox());
   }
 
+  public handleCancel(): void {
+    const workflow = this.workflowActionService.getWorkflow()
+    if (!workflow) {
+      return;
+    }
+
+    this.router.navigate([`${DASHBOARD_USER_WORKFLOW}/${workflow.wid}`])
+  }
+
   public handleKill(): void {
     this.executeWorkflowService.killWorkflow();
   }
@@ -706,6 +717,15 @@ export class MenuComponent implements OnInit, OnDestroy {
   onClickCreateNewWorkflow() {
     this.workflowActionService.resetAsNewWorkflow();
     this.location.go("/");
+  }
+
+  onClickCreateNewTemplate(): void {
+    const workflow = this.workflowActionService.getWorkflow();
+    this.templateService.createTemplate(workflow.content, workflow.name)
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.router.navigate([DASHBOARD_USER_TEMPLATE])
+      });
   }
 
   registerWorkflowMetadataDisplayRefresh() {

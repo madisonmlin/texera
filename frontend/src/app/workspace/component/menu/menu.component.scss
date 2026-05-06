@@ -78,6 +78,10 @@
   float: left;
 }
 
+#template-buttons {
+  float: right;
+}
+
 #execution-buttons {
   float: right;
 }
@@ -99,6 +103,19 @@ i {
 [nz-button] {
   width: 32px;
   padding: 0;
+}
+
+#cancel-button {
+  padding-left:10px;
+  width: 90px;
+  text-align: left;
+}
+
+#create-template-button {
+  padding-left:10px;
+  margin-right: 10px;
+  width: 150px;
+  text-align: left;
 }
 
 #save-state {

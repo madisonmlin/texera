@@ -26,7 +26,10 @@
 <div id="result">
   <texera-result-panel></texera-result-panel>
 </div>
-<texera-workflow-editor></texera-workflow-editor>
+<texera-workflow-editor
+  *ngIf="mode"
+  [mode]="mode">
+</texera-workflow-editor>
 <texera-menu
   *ngIf="mode"
   [writeAccess]="writeAccess"
