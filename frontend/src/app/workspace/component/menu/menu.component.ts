@@ -52,7 +52,6 @@ import { ShareAccessComponent } from "src/app/dashboard/component/user/share-acc
 import { PanelService } from "../../service/panel/panel.service";
 import {
   DASHBOARD_USER_TEMPLATE,
-  DASHBOARD_USER_TEMPLATE_FROM_WORKFLOW,
   DASHBOARD_USER_WORKFLOW
 } from "../../../app-routing.constant";
 import { ComputingUnitStatusService } from "../../service/computing-unit-status/computing-unit-status.service";

@@ -18,7 +18,7 @@
  */
 
 import { inject, NgModule } from "@angular/core";
-import { CanActivateFn, Router, RouterModule, Routes } from "@angular/router";
+import { CanActivateFn, Router, RouterModule, Routes, UrlSegment, UrlMatchResult } from "@angular/router";
 import { DashboardComponent } from "./dashboard/component/dashboard.component";
 import { UserWorkflowComponent } from "./dashboard/component/user/user-workflow/user-workflow.component";
 import { UserQuotaComponent } from "./dashboard/component/user/user-quota/user-quota.component";
@@ -116,12 +116,6 @@ routes.push({
         {
           path: "workflow",
           component: UserWorkflowComponent,
-          data: { type: "workflow" },
-        },
-        {
-          path: "workflow/:id",
-          component: WorkspaceComponent,
-          data: { type: "workflow" },
         },
         {
           path: "dataset",
@@ -150,23 +144,15 @@ routes.push({
         {
           path: "template",
           component: UserTemplateComponent,
-          data: { type: "template" },
-        },
-        {
-          path: "template/:id",
-          component: WorkspaceComponent,
-          data: { type: "template" },
-        },
-        {
-          path: "template/create",
-          component: WorkspaceComponent,
-          data: { type: "template" },
         },
         {
           path: "template/create-workflow/:tid",
           component: TemplatedWorkflowCreationComponent,
-          data: { type: "template" },
         },
+        {
+          matcher: workspaceMatcher,
+          component: WorkspaceComponent,
+        }
       ],
     },
     {
@@ -217,3 +203,23 @@ routes.push({
   exports: [RouterModule],
 })
 export class AppRoutingModule {}
+
+export function workspaceMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+  if (segments.length !== 2) {
+    return null;
+  }
+
+  const [mode, id] = segments;
+  const validModes = new Set(["workflow", "template"]);
+  if (!validModes.has(mode.path) || !/^\d+$/.test(id.path)) {
+    return null;
+  }
+
+  return {
+    consumed: segments,
+    posParams: {
+      mode,
+      id,
+    },
+  };
+}

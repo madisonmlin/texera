@@ -17,7 +17,16 @@
  * under the License.
  */
 
-import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, Input, OnDestroy, OnInit} from "@angular/core";
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input, OnChanges,
+  OnDestroy,
+  OnInit,
+  SimpleChanges
+} from "@angular/core";
 import { fromEvent, merge, Subject } from "rxjs";
 import { NzModalCommentBoxComponent } from "./comment-box-modal/nz-modal-comment-box.component";
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
@@ -84,7 +93,7 @@ export const MAIN_CANVAS = {
   templateUrl: "workflow-editor.component.html",
   styleUrls: ["workflow-editor.component.scss"],
 })
-export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy {
+export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
   @Input() mode?: "workflow" | "template" = "workflow";
   editor!: HTMLElement;
   editorWrapper!: HTMLElement;
@@ -181,8 +190,26 @@ export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy
     this.handleCenterEvent();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes["mode"] && !changes["mode"].firstChange) {
+      this.handleModeChange();
+    }
+  }
+
   ngOnDestroy(): void {
     document.removeEventListener("keydown", this._handleKeyboardAction.bind(this));
+  }
+
+  private handleModeChange(): void {
+    const bgColor = this.isWorkflowMode()
+      ? "#F6F6F6"
+      : "#ecf2ff";
+
+    this.paper.drawBackground({
+      color: bgColor,
+    });
+
+    this.changeDetectorRef.detectChanges();
   }
 
   private _handleKeyboardAction(event: any) {

@@ -38,7 +38,7 @@ import {WorkflowActionService} from "../service/workflow-graph/model/workflow-ac
 import {NzMessageService} from "ng-zorro-antd/message";
 import {debounceTime, distinctUntilChanged, filter, switchMap, throttleTime} from "rxjs/operators";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {Observable, of} from "rxjs";
+import {combineLatest, map, Observable, of} from "rxjs";
 import {isDefined} from "../../common/util/predicate";
 import {NotificationService} from "src/app/common/service/notification/notification.service";
 import {WorkflowConsoleService} from "../service/workflow-console/workflow-console.service";
@@ -56,6 +56,14 @@ import {Template} from "../../common/type/template";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
+type WorkspaceMode = "workflow" | "template";
+
+interface WorkspaceContext {
+  mode: WorkspaceMode;
+  id: number;
+  pid?: number;
+}
+
 @UntilDestroy()
 @Component({
   selector: "texera-workspace",
@@ -66,15 +74,28 @@ export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
     // { provide: OperatorMetadataService, useClass: StubOperatorMetadataService },
   ],
 })
-export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
+export class WorkspaceComponent implements AfterViewInit, OnDestroy {
   public pid?: number = undefined;
   public writeAccess: boolean = false;
   public isLoading: boolean = false;
-  public tid?: number = undefined;
+  @Input() tid?: number = undefined;
   @Input() wid?: number = undefined;
   @Input() mode?: "workflow" | "template";
   @Input() isEmbedded: boolean = false;
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
+
+  context$ = combineLatest([
+    this.route.paramMap,
+    this.route.queryParamMap,
+  ]).pipe(
+    map(([params, queryParams]) => ({
+      mode: params.get("mode") as WorkspaceMode,
+      id: Number(params.get("id")),
+      pid: queryParams.get("pid")
+        ? Number(queryParams.get("pid"))
+        : undefined,
+    })),
+  );
 
   /**
    * Flag to ensure auto persist is registered only once.  This prevents multiple
@@ -106,7 +127,25 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private config: GuiConfigService
   ) {}
 
-  ngOnInit() {
+  private loadWorkspace(ctx: WorkspaceContext): void {
+    this.destroyWorkspaceState();
+    this.initWorkspaceState(ctx);
+  }
+
+  private destroyWorkspaceState(): void {
+    this.isLoading = false;
+    this.autoPersistRegistered = false;
+
+    this.codeEditorViewRef?.clear();
+
+    this.undoRedoService.clearUndoStack();
+    this.undoRedoService.clearRedoStack();
+
+    this.workflowActionService.clearWorkflow();
+    this.workflowActionService.disableWorkflowModification();
+  }
+
+  private initWorkspaceState(ctx: WorkspaceContext): void {
     /**
      * On initialization of the workspace, there are two possibilities regarding which component has
      * routed to this component:
@@ -119,16 +158,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
      *    - there is no related project, parseInt will return NaN.
      *    - NaN || undefined will result in undefined.
      */
-    this.mode = this.mode ?? this.route.snapshot.data["type"];
-    const id = Number(this.route.snapshot.params.id);
-    this.wid = (this.mode === "workflow") ? this.wid ?? id : undefined;
-    this.tid = this.mode === "template" ? id : undefined;
-    this.pid = parseInt(this.route.snapshot.queryParams.pid) || undefined;
+    this.mode = ctx.mode;
+    this.wid = ctx.mode === "workflow" ? Number(ctx.id) : undefined;
+    this.tid = ctx.mode === "template" ? Number(ctx.id) : undefined;
+    this.pid = ctx.pid;
 
     this.workflowActionService.setHighlightingEnabled(true);
-  }
 
-  ngAfterViewInit(): void {
     /**
      * On initialization of the workspace, there could be two cases:
      *
@@ -147,15 +183,24 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     // clear the current workspace, reset as `WorkflowActionService.DEFAULT_WORKFLOW`
     this.workflowActionService.resetAsNewWorkflow();
     // if an id is present in the route, display loading spinner immediately while loading
-    let idInRoute = this.wid ?? this.route.snapshot.params.id;
-    if (idInRoute) {
+    if (this.wid || this.tid) {
       this.isLoading = true;
       this.workflowActionService.disableWorkflowModification();
     }
-    this.onWIDChange();
+
     this.updateViewCount();
+    this.onWIDChange();
     this.registerLoadOperatorMetadata();
+  }
+
+  ngAfterViewInit() {
     this.codeEditorService.vc = this.codeEditorViewRef;
+
+    this.context$
+      .pipe(untilDestroyed(this))
+      .subscribe(ctx => {
+        this.loadWorkspace(ctx);
+      });
   }
 
   @HostListener("window:beforeunload")
@@ -201,7 +246,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       .subscribe(
         (workflow: Workflow) => {
           this.loadWorkflowIntoWorkspace(workflow);
-          console.log(workflow)
         },
         () => {
           this.workflowActionService.resetAsNewWorkflow();
