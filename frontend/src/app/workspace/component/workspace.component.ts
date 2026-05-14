@@ -74,7 +74,7 @@ interface WorkspaceContext {
     // { provide: OperatorMetadataService, useClass: StubOperatorMetadataService },
   ],
 })
-export class WorkspaceComponent implements AfterViewInit, OnDestroy {
+export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   public pid?: number = undefined;
   public writeAccess: boolean = false;
   public isLoading: boolean = false;
@@ -127,12 +127,12 @@ export class WorkspaceComponent implements AfterViewInit, OnDestroy {
     private config: GuiConfigService
   ) {}
 
-  private loadWorkspace(ctx: WorkspaceContext): void {
-    this.destroyWorkspaceState();
-    this.initWorkspaceState(ctx);
+  private reloadWorkspace(context: WorkspaceContext): void {
+    this.cleanupWorkspaceState();
+    this.initWorkspaceState(context);
   }
 
-  private destroyWorkspaceState(): void {
+  private cleanupWorkspaceState(): void {
     this.isLoading = false;
     this.autoPersistRegistered = false;
 
@@ -145,7 +145,7 @@ export class WorkspaceComponent implements AfterViewInit, OnDestroy {
     this.workflowActionService.disableWorkflowModification();
   }
 
-  private initWorkspaceState(ctx: WorkspaceContext): void {
+  private initWorkspaceState(context: WorkspaceContext): void {
     /**
      * On initialization of the workspace, there are two possibilities regarding which component has
      * routed to this component:
@@ -158,10 +158,10 @@ export class WorkspaceComponent implements AfterViewInit, OnDestroy {
      *    - there is no related project, parseInt will return NaN.
      *    - NaN || undefined will result in undefined.
      */
-    this.mode = ctx.mode;
-    this.wid = ctx.mode === "workflow" ? Number(ctx.id) : undefined;
-    this.tid = ctx.mode === "template" ? Number(ctx.id) : undefined;
-    this.pid = ctx.pid;
+    this.mode = context.mode;
+    this.wid = context.mode === "workflow" ? Number(context.id) : undefined;
+    this.tid = context.mode === "template" ? Number(context.id) : undefined;
+    this.pid = context.pid;
 
     this.workflowActionService.setHighlightingEnabled(true);
 
@@ -193,14 +193,28 @@ export class WorkspaceComponent implements AfterViewInit, OnDestroy {
     this.registerLoadOperatorMetadata();
   }
 
-  ngAfterViewInit() {
-    this.codeEditorService.vc = this.codeEditorViewRef;
+  private getEmbeddedWorkspaceContext(): WorkspaceContext {
+    return {
+      mode: this.mode!,
+      id: this.wid ?? this.tid!,
+      pid: this.pid,
+    };
+  }
 
+  ngOnInit() {
     this.context$
       .pipe(untilDestroyed(this))
-      .subscribe(ctx => {
-        this.loadWorkspace(ctx);
+      .subscribe(context => {
+        if (this.isEmbedded) {
+          this.reloadWorkspace(this.getEmbeddedWorkspaceContext());
+        } else {
+          this.reloadWorkspace(context);
+        }
       });
+  }
+
+  ngAfterViewInit() {
+    this.codeEditorService.vc = this.codeEditorViewRef;
   }
 
   @HostListener("window:beforeunload")
