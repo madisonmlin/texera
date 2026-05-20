@@ -21,17 +21,17 @@
   <nz-card class="section-title">
     <h2 class="page-title">Templates</h2>
     <div class="button-group">
-<!--      <button-->
-<!--        nz-button-->
-<!--        class="create-btn"-->
-<!--        (click)="onClickOpenScGPTJobAddComponent()"-->
-<!--        title="Create Job">-->
-<!--        <i-->
-<!--          nz-icon-->
-<!--          nzType="file-add"-->
-<!--          nzTheme="outline"></i>-->
-<!--        <span>Create Workflow from Template</span>-->
-<!--      </button>-->
+      <button
+        nz-button
+        class="create-btn"
+        (click)="onClickCreateNewTemplateFromDashboard()"
+        title="Create a new template">
+        <i
+          nz-icon
+          nzType="file-add"
+          nzTheme="outline"></i>
+        <span>Create Template</span>
+      </button>
       <nz-button-group
         class="utility-button-group"
         ngbDropdown>
@@ -109,7 +109,6 @@
   <div class="section-search-bar template-search-bar">
     <texera-filters-instructions></texera-filters-instructions>
     <nz-select
-      #searchInput
       class="search-input-box"
       name="search-input-box"
       nzMode="tags"

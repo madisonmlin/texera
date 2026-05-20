@@ -26,6 +26,7 @@ import { FieldArrayType } from "@ngx-formly/core";
         [nzShape]="'circle'"
         nzDanger
         type="button"
+        [disabled]="formControl?.disabled"
         (click)="remove(i)">
         <span
           nz-icon
@@ -40,6 +41,7 @@ import { FieldArrayType } from "@ngx-formly/core";
       [nzType]="'primary'"
       [nzShape]="'circle'"
       type="button"
+      [disabled]="formControl?.disabled"
       (click)="add()"
       style="display:inline-block;vertical-align: baseline;float: right;">
       <span

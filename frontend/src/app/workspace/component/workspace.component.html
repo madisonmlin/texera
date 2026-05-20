@@ -26,13 +26,18 @@
 <div id="result">
   <texera-result-panel></texera-result-panel>
 </div>
-<texera-workflow-editor></texera-workflow-editor>
+<texera-workflow-editor
+  *ngIf="mode"
+  [mode]="mode">
+</texera-workflow-editor>
 <texera-menu
+  *ngIf="mode"
   [writeAccess]="writeAccess"
-  [pid]="pid">
+  [pid]="pid"
+  [mode]="mode">
 </texera-menu>
 <texera-mini-map class="box"></texera-mini-map>
 <texera-left-panel> </texera-left-panel>
 <texera-agent-panel *ngIf="copilotEnabled"></texera-agent-panel>
-<texera-property-editor></texera-property-editor>
+<texera-property-editor *ngIf="mode" [mode]="mode"></texera-property-editor>
 <ng-template #codeEditor></ng-template>

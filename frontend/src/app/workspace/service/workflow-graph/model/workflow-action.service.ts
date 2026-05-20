@@ -44,7 +44,6 @@ import {isDefined} from "../../../../common/util/predicate";
 import {User} from "../../../../common/type/user";
 import {SharedModelChangeHandler} from "./shared-model-change-handler";
 import {GuiConfigService} from "../../../../common/service/gui-config.service";
-import {WorkflowDisplayMode} from "../../../../dashboard/type/workflow-display-mode";
 
 export const DEFAULT_WORKFLOW_NAME = "Untitled Workflow";
 export const DEFAULT_WORKFLOW = {
@@ -98,7 +97,6 @@ export class WorkflowActionService {
 
   private workflowSettings: WorkflowSettings;
   private workflowResetSubject = new Subject<void>();
-  private workflowDisplayMode: WorkflowDisplayMode = WorkflowDisplayMode.REGULAR;
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
@@ -137,7 +135,7 @@ export class WorkflowActionService {
    * Workflow modification lock interface (allows or prevents commands that would modify the workflow graph).
    */
   public enableWorkflowModification() {
-    if (this.workflowDisplayMode !== WorkflowDisplayMode.READONLY && !this.workflowMetadata.readonly && !this.workflowModificationEnabled) {
+    if (!this.workflowMetadata.readonly && !this.workflowModificationEnabled) {
       this.workflowModificationEnabled = true;
       this.enableModificationStream.next(true);
       this.undoRedoService.enableWorkFlowModification();
@@ -459,6 +457,12 @@ export class WorkflowActionService {
     });
   }
 
+  public setOperatorConfigurableProperties(operatorID: string, newConfigurableProperties: string[]): void {
+    this.texeraGraph.bundleActions(() => {
+      this.texeraGraph.setOperatorConfigurableProperties(operatorID, newConfigurableProperties);
+    });
+  }
+
   public setPortProperty(operatorPortID: LogicalPort, newProperty: object) {
     this.texeraGraph.bundleActions(() => {
       this.texeraGraph.setPortProperty(operatorPortID, newProperty);
@@ -731,10 +735,6 @@ export class WorkflowActionService {
     this.workflowSettings = newSettings;
   }
 
-  public setWorkflowDisplayMode(workflowDisplayMode: WorkflowDisplayMode): void {
-    this.workflowDisplayMode = workflowDisplayMode;
-  }
-
   public getWorkflowSettings(): WorkflowSettings {
     return this.workflowSettings;
   }
@@ -802,9 +802,10 @@ export class WorkflowActionService {
   /**
    * This is not included in shared editing.
    * @param name
+   * @param defaultName
    */
-  public setWorkflowName(name: string): void {
-    const newName = name.trim().length > 0 ? name : DEFAULT_WORKFLOW_NAME;
+  public setWorkflowName(name: string, defaultName: string = DEFAULT_WORKFLOW_NAME): void {
+    const newName = name.trim().length > 0 ? name : defaultName;
     this.setWorkflowMetadata({ ...this.workflowMetadata, name: newName });
   }
 
@@ -822,7 +823,6 @@ export class WorkflowActionService {
     this.destroySharedModel();
     this.setWorkflowMetadata(undefined);
     this.setWorkflowSettings(undefined);
-    this.setWorkflowDisplayMode(WorkflowDisplayMode.REGULAR);
     this.reloadWorkflow(undefined);
     this.setHighlightingEnabled(false);
   }

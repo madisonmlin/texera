@@ -17,7 +17,16 @@
  * under the License.
  */
 
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit } from "@angular/core";
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input, OnChanges,
+  OnDestroy,
+  OnInit,
+  SimpleChanges
+} from "@angular/core";
 import { fromEvent, merge, Subject } from "rxjs";
 import { NzModalCommentBoxComponent } from "./comment-box-modal/nz-modal-comment-box.component";
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
@@ -84,7 +93,8 @@ export const MAIN_CANVAS = {
   templateUrl: "workflow-editor.component.html",
   styleUrls: ["workflow-editor.component.scss"],
 })
-export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy {
+export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
+  @Input() mode?: "workflow" | "template" = "workflow";
   editor!: HTMLElement;
   editorWrapper!: HTMLElement;
   paper!: joint.dia.Paper;
@@ -180,8 +190,26 @@ export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy
     this.handleCenterEvent();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes["mode"] && !changes["mode"].firstChange) {
+      this.handleModeChange();
+    }
+  }
+
   ngOnDestroy(): void {
     document.removeEventListener("keydown", this._handleKeyboardAction.bind(this));
+  }
+
+  private handleModeChange(): void {
+    const bgColor = this.isWorkflowMode()
+      ? "#F6F6F6"
+      : "#ecf2ff";
+
+    this.paper.drawBackground({
+      color: bgColor,
+    });
+
+    this.changeDetectorRef.detectChanges();
   }
 
   private _handleKeyboardAction(event: any) {
@@ -213,10 +241,12 @@ export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   private initializeJointPaper(): void {
+    const bgColor = this.isWorkflowMode() ? "#F6F6F6" : "#ecf2ff"
+
     // attach the JointJS graph (model) to the paper (view)
     this.paper = this.wrapper.attachMainJointPaper({
       el: this.editor,
-      background: { color: "#F6F6F6" },
+      background: { color: bgColor },
       // enable jointjs feature that automatically snaps a link to the closest port with a radius of 30px
       snapLinks: { radius: 40 },
       // disable jointjs default action that can make a link not connect to an operator
@@ -1553,5 +1583,9 @@ export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnDestroy
     }
 
     return WorkflowEditorComponent.RemoveButton;
+  }
+
+  private isWorkflowMode(): boolean {
+    return this.mode === "workflow"
   }
 }

@@ -69,6 +69,7 @@ export interface OperatorPredicate
     operatorProperties: Readonly<{ [key: string]: any }>;
     inputPorts: PortDescription[];
     outputPorts: PortDescription[];
+    configurableProperties?: string[]
     dynamicInputPorts?: boolean;
     dynamicOutputPorts?: boolean;
     showAdvanced: boolean;

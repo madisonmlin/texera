@@ -16,28 +16,39 @@
  specific language governing permissions and limitations
  under the License.
 -->
-<h2 class="job-title">Create Workflow from Template:</h2>
-<form [formGroup]="form">
-  <formly-form
-    [model]="model"
-    [fields]="fields"
-    [form]="form">
-  </formly-form>
-</form>
+<h2 class="job-title">Build Workflow from Template:</h2>
 
-<!--<texera-formly-form-frame *ngIf="wid" [currentOperatorId]="'CSVFileScan-operator'" [configurableProperties]="configurableProperties"></texera-formly-form-frame>-->
+<div *ngIf="sections.length === 0" class="empty-state">
+  No configurable parameters in this template.
+</div>
+
+<div *ngFor="let section of sections" class="template-section">
+  <h3 class="template-section-title">{{ section.label }}</h3>
+  <form [formGroup]="section.form">
+    <formly-form
+      [model]="section.model"
+      [fields]="section.fields"
+      [form]="section.form">
+    </formly-form>
+  </form>
+</div>
 
 <button
   nz-button
   nzType="primary"
-  [disabled]="!form.valid"
-  (click)="onJobFormValidated()">
-  VALIDATE
+  [disabled]="!formValid"
+  (click)="onJobFormSubmitted()">
+  SUBMIT
 </button>
 
 <div class="readonly-embedded-workspace-container" *ngIf="wid">
   <div class="inner-scale">
-    <texera-workspace [wid]="wid">
+    <texera-workspace
+      [wid]="wid"
+      [isEmbedded]="true"
+      [mode]="'workflow'"
+      (workspaceReady)="onWorkspaceReady()"
+    >
     </texera-workspace>
   </div>
 </div>

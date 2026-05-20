@@ -19,7 +19,7 @@
 
 import { DatePipe, Location } from "@angular/common";
 import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from "@angular/core";
-import { Router } from "@angular/router";
+import {ActivatedRoute, Router} from "@angular/router";
 import { UserService } from "../../../common/service/user/user.service";
 import {
   DEFAULT_WORKFLOW_NAME,
@@ -50,7 +50,10 @@ import { ResultExportationComponent } from "../result-exportation/result-exporta
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
 import { PanelService } from "../../service/panel/panel.service";
-import { DASHBOARD_USER_WORKFLOW } from "../../../app-routing.constant";
+import {
+  DASHBOARD_USER_TEMPLATE,
+  DASHBOARD_USER_WORKFLOW
+} from "../../../app-routing.constant";
 import { ComputingUnitStatusService } from "../../service/computing-unit-status/computing-unit-status.service";
 import { ComputingUnitState } from "../../types/computing-unit-connection.interface";
 import { ComputingUnitSelectionComponent } from "../power-button/computing-unit-selection.component";
@@ -58,6 +61,7 @@ import { GuiConfigService } from "../../../common/service/gui-config.service";
 import { DashboardWorkflowComputingUnit } from "../../types/workflow-computing-unit";
 import { Privilege } from "../../../dashboard/type/share-access.interface";
 import { MarkdownDescriptionComponent } from "../../../dashboard/component/user/markdown-description/markdown-description.component";
+import {DEFAULT_TEMPLATE_NAME, TemplateService} from "../../../dashboard/service/user/template/template.service";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -81,6 +85,7 @@ import { MarkdownDescriptionComponent } from "../../../dashboard/component/user/
   styleUrls: ["menu.component.scss"],
 })
 export class MenuComponent implements OnInit, OnDestroy {
+  public entityId?: number = undefined;
   public executionState: ExecutionState; // set this to true when the workflow is started
   public ExecutionState = ExecutionState; // make Angular HTML access enum definition
   public ComputingUnitState = ComputingUnitState; // make Angular HTML access enum definition
@@ -88,7 +93,6 @@ export class MenuComponent implements OnInit, OnDestroy {
   public isWorkflowEmpty: boolean = false;
   public isSaving: boolean = false;
   public isWorkflowModifiable: boolean = false;
-  public workflowId?: number;
   public isExportDeactivate: boolean = false;
   public showRegion: boolean = false;
   public showGrid: boolean = false;
@@ -96,6 +100,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   public showStatus: boolean = false;
   protected readonly DASHBOARD_USER_WORKFLOW = DASHBOARD_USER_WORKFLOW;
 
+  @Input() public mode: "workflow" | "template" = "workflow";
   @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
@@ -132,6 +137,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     public workflowVersionService: WorkflowVersionService,
+    public templateService: TemplateService,
     public userService: UserService,
     private datePipe: DatePipe,
     public workflowResultExportService: WorkflowResultExportService,
@@ -145,8 +151,11 @@ export class MenuComponent implements OnInit, OnDestroy {
     private panelService: PanelService,
     private computingUnitStatusService: ComputingUnitStatusService,
     protected config: GuiConfigService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute,
   ) {
+    this.entityId = Number(this.route.snapshot.params["id"]);
+
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
       .pipe(untilDestroyed(this))
@@ -288,7 +297,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       nzData: {
         writeAccess: this.writeAccess,
         type: "workflow",
-        id: this.workflowId,
+        id: this.entityId,
         allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
         inWorkspace: true,
       },
@@ -426,6 +435,15 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   public onClickAddCommentBox(): void {
     this.workflowActionService.addCommentBox(this.workflowUtilService.getNewCommentBox());
+  }
+
+  public handleCancel(): void {
+    const workflow = this.workflowActionService.getWorkflow()
+    if (!workflow) {
+      return;
+    }
+
+    this.router.navigate([`${DASHBOARD_USER_WORKFLOW}/${workflow.wid}`])
   }
 
   public handleKill(): void {
@@ -571,7 +589,7 @@ export class MenuComponent implements OnInit, OnDestroy {
           workflowName = file.name.substring(0, fileExtensionIndex);
         }
         if (workflowName.trim() === "") {
-          workflowName = DEFAULT_WORKFLOW_NAME;
+          workflowName = this.isWorkflowMode ? DEFAULT_WORKFLOW_NAME : DEFAULT_TEMPLATE_NAME;
         }
 
         const workflow: Workflow = {
@@ -616,7 +634,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     const currentDescription = currentWorkflow.description ?? "";
 
     const modalRef = this.modalService.create<MarkdownDescriptionComponent>({
-      nzTitle: "Edit Workflow Description",
+      nzTitle: this.isWorkflowMode ? "Edit Workflow Description" : "Edit Template Description",
       nzContent: MarkdownDescriptionComponent,
       nzData: {
         description: currentDescription,
@@ -646,6 +664,19 @@ export class MenuComponent implements OnInit, OnDestroy {
     });
   }
 
+  public onClickCreateTemplateFromWorkflow(): void {
+    const workflow = this.workflowActionService.getWorkflow()
+    if (!workflow.wid) {
+      return;
+    }
+
+    this.templateService.createTemplateFromWorkflow(workflow.wid)
+      .pipe(untilDestroyed(this))
+      .subscribe((template) => {
+        this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/${template.template.tid}`])
+      })
+  }
+
   /**
    * Returns true if there's any operator on the graph; false otherwise
    */
@@ -654,6 +685,10 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   public persistWorkflow(): void {
+    if (!this.isWorkflowMode) {
+      return;
+    }
+
     this.isSaving = true;
     let localPid = this.pid;
     this.workflowPersistService
@@ -676,7 +711,10 @@ export class MenuComponent implements OnInit, OnDestroy {
    * Handler for changing workflow name input box, updates the cachedWorkflow and persist to database.
    */
   onWorkflowNameChange() {
-    this.workflowActionService.setWorkflowName(this.currentWorkflowName);
+    this.workflowActionService.setWorkflowName(
+      this.currentWorkflowName,
+      this.isTemplateMode ? DEFAULT_TEMPLATE_NAME : DEFAULT_WORKFLOW_NAME
+    );
     if (this.userService.isLogin()) {
       this.persistWorkflow();
     }
@@ -774,8 +812,10 @@ export class MenuComponent implements OnInit, OnDestroy {
       .workflowMetaDataChanged()
       .pipe(untilDestroyed(this))
       .subscribe(metadata => {
-        this.workflowId = metadata.wid;
-        // consider adding the oprerator reconnect
+        if (this.isWorkflowMode) {
+          this.entityId = metadata.wid;
+        }
+        // consider adding the operator reconnect
       });
   }
 
@@ -810,6 +850,46 @@ export class MenuComponent implements OnInit, OnDestroy {
       this.currentExecutionName || "Untitled Execution",
       this.config.env.workflowEmailNotificationEnabled
     );
+  }
+
+  public get entityName(): string {
+    return this.mode;
+  }
+
+  public get entityNameCapitalized(): string {
+    return this.entityName.charAt(0).toUpperCase() + this.entityName.slice(1);
+  }
+
+  public get dashboardLink(): string {
+    if (this.isWorkflowMode) {
+      return DASHBOARD_USER_WORKFLOW
+    } else {
+      return DASHBOARD_USER_TEMPLATE
+    }
+  }
+
+  public get isWorkflowMode(): boolean {
+    return this.mode === "workflow";
+  }
+
+  public get isTemplateMode(): boolean {
+    return this.mode === "template";
+  }
+
+  public get showExecutionButtons(): boolean {
+    return !this.isTemplateMode;
+  }
+
+  public get showEditingButtons(): boolean {
+    return !this.isTemplateMode;
+  }
+
+  public get showCreateNewButton(): boolean {
+    return !this.isTemplateMode
+  }
+
+  public get showTemplateCreationButton(): boolean {
+    return this.isWorkflowMode
   }
 
   protected readonly Privilege = Privilege;

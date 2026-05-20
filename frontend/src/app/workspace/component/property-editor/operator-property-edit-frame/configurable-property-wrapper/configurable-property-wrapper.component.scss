@@ -1,0 +1,16 @@
+.configurable-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.configurable-wrapper input[type="checkbox"] {
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.configurable-wrapper .field-content {
+  flex: 1;
+  min-width: 0;
+}

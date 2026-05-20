@@ -17,7 +17,7 @@
  under the License.
 -->
 
-<div id="workflow-editor-wrapper">
+<div id="workflow-editor-wrapper" [ngClass]="mode">
   <div
     id="workflow-editor"
     (contextmenu)="nzContextMenu.create($event, menu)"></div>

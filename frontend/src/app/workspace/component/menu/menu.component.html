@@ -34,8 +34,8 @@
         <label>
           <nz-avatar
             style="vertical-align: top; margin-top: 1px; margin-left: 3px"
-            *ngIf="workflowId"
-            [nzText]="workflowId.toString() || ''"></nz-avatar>
+            *ngIf="entityId"
+            [nzText]="entityId.toString() || ''"></nz-avatar>
           <input
             #workflowNameInput
             *ngIf="!displayParticularWorkflowVersion"
@@ -43,7 +43,7 @@
             (change)="onWorkflowNameChange()"
             [(ngModel)]="currentWorkflowName"
             class="workflow-name"
-            placeholder="Untitled Workflow" />
+            [placeholder]="'Untitled ' + entityNameCapitalized" />
           <span *ngIf="displayParticularWorkflowVersion"> {{particularVersionDate}} </span>
         </label>
         <button
@@ -85,7 +85,7 @@
       <nz-button-group
         id="user-buttons"
         *ngIf="!displayParticularWorkflowVersion">
-        <a [routerLink]="DASHBOARD_USER_WORKFLOW">
+        <a [routerLink]="dashboardLink">
           <button
             nz-button
             title="dashboard">
@@ -95,6 +95,7 @@
           </button>
         </a>
         <button
+          *ngIf="showCreateNewButton"
           (click)="onClickCreateNewWorkflow()"
           nz-button
           title="create new">
@@ -113,6 +114,7 @@
             nzType="save"></i>
         </button>
         <button
+          *ngIf="showEditingButtons"
           (click)="onClickDeleteAllOperators()"
           [disabled]="!isWorkflowModifiable"
           nz-button
@@ -122,6 +124,7 @@
             nzType="delete"></i>
         </button>
         <nz-upload
+          *ngIf="showEditingButtons"
           [nzDisabled]="!isWorkflowModifiable"
           [nzBeforeUpload]="onClickImportWorkflow">
           <button
@@ -136,7 +139,7 @@
         <button
           (click)="onClickExportWorkflow()"
           nz-button
-          title="export workflow">
+          [title]="'export ' + entityName">
           <i
             nz-icon
             nzType="download"></i>
@@ -148,6 +151,15 @@
           <i
             nz-icon
             nzType="info-circle"></i>
+        </button>
+        <button
+          *ngIf="showTemplateCreationButton"
+          (click)="onClickCreateTemplateFromWorkflow()"
+          nz-button
+          title="create template">
+          <i
+            nz-icon
+            nzType="experiment"></i>
         </button>
       </nz-button-group>
       <ng-template #utilities>
@@ -216,6 +228,7 @@
               nzType="clear"></i>
           </button>
           <button
+            *ngIf="showExecutionButtons"
             (click)="onClickGenerateReport()"
             nz-button
             title="generate report">
@@ -233,6 +246,7 @@
           </button>
           <button
             nz-button
+            *ngIf="showEditingButtons"
             (click)="onClickAutoLayout()"
             [disabled]="!isWorkflowModifiable"
             title="auto layout">
@@ -241,6 +255,7 @@
               nzType="partition"></i>
           </button>
           <button
+            *ngIf="showEditingButtons"
             (click)="onClickAddCommentBox()"
             [disabled]="!isWorkflowModifiable"
             nz-button
@@ -252,6 +267,7 @@
           <button
             nz-button
             nz-dropdown
+            *ngIf="showExecutionButtons"
             (click)="onClickExportExecutionResult()"
             [nzTrigger]="isExportDeactivate ? 'click' : 'hover'"
             [disabled]="isExportDeactivate"
@@ -262,7 +278,7 @@
           </button>
           <button
             (click)="operatorMenu.disableHighlightedOperators()"
-            *ngIf="operatorMenu.isDisableOperator || !operatorMenu.isDisableOperatorClickable"
+            *ngIf="(operatorMenu.isDisableOperator || !operatorMenu.isDisableOperatorClickable) && showExecutionButtons"
             [disabled]="!operatorMenu.isDisableOperatorClickable"
             nz-button
             title="disable operators">
@@ -282,7 +298,7 @@
               nzType="stop"></i>
           </button>
           <button
-            *ngIf="(operatorMenu.isToViewResult || ! operatorMenu.isToViewResultClickable)"
+            *ngIf="(operatorMenu.isToViewResult || ! operatorMenu.isToViewResultClickable) && showExecutionButtons"
             [disabled]="! operatorMenu.isToViewResultClickable"
             (click)="operatorMenu.viewResultHighlightedOperators()"
             nz-button
@@ -303,7 +319,7 @@
               nzTheme="twotone"></i>
           </button>
           <button
-            *ngIf="(operatorMenu.isMarkForReuse || ! operatorMenu.isReuseResultClickable)"
+            *ngIf="(operatorMenu.isMarkForReuse || ! operatorMenu.isReuseResultClickable) && showExecutionButtons"
             [disabled]="true || ! operatorMenu.isReuseResultClickable"
             (click)="operatorMenu.reuseResultHighlightedOperator()"
             nz-button
@@ -360,7 +376,7 @@
           nzType="ellipsis"></i>
       </button>
 
-      <nz-button-group id="execution-buttons">
+      <nz-button-group id="execution-buttons" *ngIf="showExecutionButtons">
         <texera-computing-unit-selection id="texera-compute-unit-selection"> </texera-computing-unit-selection>
         <button
           nz-button

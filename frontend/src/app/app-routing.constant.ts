@@ -39,6 +39,7 @@ export const DASHBOARD_USER_COMPUTING_UNIT = `${DASHBOARD_USER}/compute`;
 export const DASHBOARD_USER_QUOTA = `${DASHBOARD_USER}/quota`;
 export const DASHBOARD_USER_DISCUSSION = `${DASHBOARD_USER}/discussion`;
 export const DASHBOARD_USER_TEMPLATE = `${DASHBOARD_USER}/template`;
+export const DASHBOARD_USER_TEMPLATED_WORKFLOW = `${DASHBOARD_USER}/template/create-workflow`;
 
 export const DASHBOARD_ADMIN = `${DASHBOARD}/admin`;
 export const DASHBOARD_ADMIN_USER = `${DASHBOARD_ADMIN}/user`;

@@ -30,6 +30,9 @@ import { FormlyRepeatDndComponent } from "./repeat-dnd/repeat-dnd.component";
 import {
   WorkflowTemplateSelectionComponent
 } from "../../dashboard/component/user/user-template/workflow-template-select/workflow-template-selection.component";
+import {
+  ConfigurablePropertyWrapperComponent
+} from "../../workspace/component/property-editor/operator-property-edit-frame/configurable-property-wrapper/configurable-property-wrapper.component";
 
 /**
  * Configuration for using Json Schema with Formly.
@@ -86,6 +89,7 @@ export const TEXERA_FORMLY_CONFIG = {
   wrappers: [
     { name: "preset-wrapper", component: PresetWrapperComponent },
     { name: "collab-wrapper", component: CollabWrapperComponent },
+    { name: "configurable-property-wrapper", component: ConfigurablePropertyWrapperComponent }
   ],
 };
 

@@ -208,10 +208,9 @@ export class DashboardComponent implements OnInit {
 
   isNavbarEnabled(currentRoute: string) {
     // Hide navbar for workflow workspace pages (with numeric ID)
-    if (currentRoute.match(/\/dashboard\/user\/workflow\/\d+/)) {
-      return false;
-    }
-    return true;
+    const workspaceRouteRegex = /\/dashboard\/user\/(workflow|template|template-from-workflow)\/\d+/;
+
+    return !workspaceRouteRegex.test(currentRoute);
   }
 
   handleCollapseChange(collapsed: boolean) {

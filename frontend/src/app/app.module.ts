@@ -192,6 +192,9 @@ import { TemplatedWorkflowCreationComponent } from "./dashboard/component/user/u
 import {
   WorkflowTemplateSelectionComponent
 } from "./dashboard/component/user/user-template/workflow-template-select/workflow-template-selection.component";
+import {
+  ConfigurablePropertyWrapperComponent
+} from "./workspace/component/property-editor/operator-property-edit-frame/configurable-property-wrapper/configurable-property-wrapper.component";
 
 registerLocaleData(en);
 
@@ -228,6 +231,7 @@ registerLocaleData(en);
     ArrayTypeComponent,
     ObjectTypeComponent,
     PresetWrapperComponent,
+    ConfigurablePropertyWrapperComponent,
     MultiSchemaTypeComponent,
     NullTypeComponent,
     VisualizationFrameContentComponent,

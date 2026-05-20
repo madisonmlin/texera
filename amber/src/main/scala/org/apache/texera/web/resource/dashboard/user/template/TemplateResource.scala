@@ -15,15 +15,18 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.{BadRequestException, Consumes, ForbiddenException, GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam, WebApplicationException}
 import scala.jdk.CollectionConverters._
 import org.apache.texera.web.resource.dashboard.user.template.TemplateResource._
-import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
+import org.apache.texera.web.resource.dashboard.user.workflow.{WorkflowAccessResource, WorkflowResource}
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import org.apache.texera.web.resource.dashboard.user.workflow.WorkflowResource.{DashboardWorkflow, WorkflowIDs, assignNewOperatorIds, context, workflowDao, workflowOfProjectDao, workflowOfProjectExists}
+import org.apache.texera.web.service.WorkflowPersistService
 
 import javax.annotation.security.RolesAllowed
 import org.apache.texera.web.service.{TemplateEntry, TemplateService}
 
 import scala.collection.mutable.ListBuffer
 import scala.util.control.NonFatal
+
+case class CreateFromWorkflowRequest(wid: Integer)
 
 object TemplateResource {
   final private lazy val context = SqlServer
@@ -68,6 +71,7 @@ object TemplateResource {
 @Path("/template")
 class TemplateResource extends LazyLogging {
   val templateService = new TemplateService(context);
+  val workflowPersistService = new WorkflowPersistService(context);
 
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
@@ -93,6 +97,26 @@ class TemplateResource extends LazyLogging {
       PrivilegeEnum.WRITE.toString,
       user.getUid
     )
+  }
+
+  @POST
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/create-from-workflow")
+  def createTemplateFromWorkflow(
+                                  request: CreateFromWorkflowRequest,
+                                  @Auth user: SessionUser
+                                ): DashboardTemplate = {
+    val workflow = this.workflowPersistService.retrieveWorkflow(request.wid, user);
+    val template = new Template(
+      null,                   // tid
+      workflow.name,          // name
+      workflow.description,   // description
+      workflow.content,       // content
+      null,                   // creationTime
+      null,                   // lastModifiedTime
+      ""                      // configurableParameters
+    )
+    createTemplate(template, user);
   }
 
   @POST
@@ -140,6 +164,46 @@ class TemplateResource extends LazyLogging {
     this.templateService.retrieveTemplate(tid);
   }
 
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/persist")
+  def persistTemplate(template: Template, @Auth sessionUser: SessionUser): Template = {
+    val user = sessionUser.getUser
+    if (user == org.apache.texera.web.auth.GuestAuthFilter.GUEST) {
+      throw new ForbiddenException("Guest user does not have access to db.")
+    }
+
+    if (templateOfUserExists(template.getTid, user.getUid)) {
+//      TemplateVersionResource.insertVersion(template, insertingNewTemplate = false)
+      templateDao.update(template)
+    } else {
+      if (!TemplateAccessResource.hasReadAccess(template.getTid, user.getUid)) {
+        // Check if this template exists in the database
+        val templateExistsInDb =
+          template.getTid != null && templateDao.existsById(template.getTid)
+        if (templateExistsInDb) {
+          // User trying to persist an existing template without access - reject
+          throw new ForbiddenException("No sufficient access privilege.")
+        }
+        // This is a new template being created (wid is null or doesn't exist in DB)
+        template.setTid(null)
+        insertTemplate(template, user)
+//        TemplateVersionResource.insertVersion(template, insertingNewTemplate = true)
+      } else if (TemplateAccessResource.hasWriteAccess(template.getTid, user.getUid)) {
+//        TemplateVersionResource.insertVersion(template, insertingNewTemplate = false)
+        // not owner but has write access
+        templateDao.update(template)
+      } else {
+        // not owner and no write access -> rejected
+        throw new ForbiddenException("No sufficient access privilege.")
+      }
+    }
+
+    val tid = template.getTid
+    templateDao.fetchOneByTid(tid)
+  }
+
   /**
    * This method duplicates the target template, the new template name is appended with `_copy`
    *
@@ -155,13 +219,13 @@ class TemplateResource extends LazyLogging {
                          @Auth sessionUser: SessionUser
                        ): List[DashboardTemplate] = {
 
-//    val user = sessionUser.getUser
-//    // do the permission check first
-//    for (tid <- templateIDs.tids) {
-//      if (!TemplateAccessResource.hasReadAccess(tid, user.getUid)) {
-//        throw new ForbiddenException("No sufficient access privilege.")
-//      }
-//    }
+    val user = sessionUser.getUser
+    // do the permission check first
+    for (tid <- templateIDs.tids) {
+      if (!TemplateAccessResource.hasReadAccess(tid, user.getUid)) {
+        throw new ForbiddenException("No sufficient access privilege.")
+      }
+    }
 
     val resultTemplates: ListBuffer[DashboardTemplate] = ListBuffer()
     // then start a transaction and do the duplication

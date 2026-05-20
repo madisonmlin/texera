@@ -1,0 +1,12 @@
+<div class="configurable-wrapper">
+  <input
+    *ngIf="props.isTemplateMode"
+    type="checkbox"
+    [checked]="props.configurable"
+    (change)="props.toggleConfigurable($event)"
+  />
+
+  <div class="field-content">
+    <ng-container #fieldComponent></ng-container>
+  </div>
+</div>

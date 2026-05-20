@@ -18,7 +18,7 @@
  */
 
 import {AfterViewInit, Component, inject, OnInit, ViewChild} from "@angular/core";
-import {DASHBOARD_USER_TEMPLATE} from "../../../../app-routing.constant";
+import {DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_WORKSPACE} from "../../../../app-routing.constant";
 import {NzModalService} from "ng-zorro-antd/modal";
 import {UserService} from "../../../../common/service/user/user.service";
 import {Router} from "@angular/router";
@@ -31,7 +31,7 @@ import {SearchResultsComponent} from "../search-results/search-results.component
 import {FiltersComponent} from "../filters/filters.component";
 import {SortMethod} from "../../../type/sort-method";
 import {firstValueFrom, from, lastValueFrom, Observable, of} from "rxjs";
-import {map, switchMap, tap} from "rxjs/operators";
+import {map, mergeMap, switchMap, tap} from "rxjs/operators";
 import workflow from "../../../../../assets/workflow_templates/scGPT_FINAL.json";
 import {DEFAULT_TEMPLATE_NAME, TemplateService} from "../../../service/user/template/template.service";
 import {NzUploadFile} from "ng-zorro-antd/upload";
@@ -43,6 +43,7 @@ import {DownloadService} from "../../../service/user/download/download.service";
 import {DashboardWorkflow} from "../../../type/dashboard-workflow.interface";
 import {isDefined} from "../../../../common/util/predicate";
 import {DashboardTemplate} from "../../../type/dashboard-template.interface";
+import {GuiConfigService} from "../../../../common/service/gui-config.service";
 
 @UntilDestroy()
 @Component({
@@ -88,7 +89,8 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
     private searchService: SearchService,
     private datasetService: DatasetService,
     private templateService: TemplateService,
-    private message: NzMessageService
+    private message: NzMessageService,
+    private config: GuiConfigService
   ) {
     this.userService
       .userChanged()
@@ -137,6 +139,40 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
       );
     });
     await this.searchResultsComponent.loadMore();
+  }
+
+  public onClickCreateNewTemplateFromDashboard(): void {
+    const emptyTemplateContent: WorkflowContent = {
+      operators: [],
+      commentBoxes: [],
+      links: [],
+      operatorPositions: {},
+      settings: {
+        dataTransferBatchSize: this.config.env.defaultDataTransferBatchSize,
+        executionMode: this.config.env.defaultExecutionMode,
+      },
+    };
+
+    this.templateService
+      .createTemplate(emptyTemplateContent, DEFAULT_TEMPLATE_NAME)
+      .pipe(
+        tap(createdTemplate => {
+          if (!createdTemplate.template.tid) {
+            throw new Error("Template creation failed.");
+          }
+        }),
+        mergeMap(createdTemplate => {
+            return of(createdTemplate.template.tid);
+        }),
+        untilDestroyed(this)
+      )
+      .subscribe({
+        next: (tid: number | undefined) => {
+          // Use the tid here for navigation
+          this.router.navigate([DASHBOARD_USER_TEMPLATE, tid]).then(null);
+        },
+        error: (err: unknown) => this.notificationService.error("Template creation failed"),
+      });
   }
 
   public selectionTooltip: string = "Select all";

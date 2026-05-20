@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,33 +17,20 @@
  * under the License.
  */
 
-.readonly-embedded-workspace-container {
-  width: 80vw;
-  height: calc(80vw * 0.4);
-  min-width: 400px;
-  min-height: 250px;
-  max-width: 95vw;
-  max-height: 85vh;
-  resize: both;
-  overflow: hidden;
-  border: 1px solid #aaa;
-  border-radius: 6px;
-  background: white;
-  position: relative;
-}
+\c texera_db
+SET search_path TO texera_db, public;
 
-.inner-scale {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-origin: top left;
-  transform: scale(1);
-}
+BEGIN;
 
-texera-workspace {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
-  position: relative;
-}
+DROP TABLE workflow_of_template;
 
+CREATE TABLE IF NOT EXISTS workflow_of_template
+(
+    tid         INT PRIMARY KEY,
+    wid         INT NOT NULL UNIQUE,
+    parameters  TEXT,
+    FOREIGN KEY (tid) REFERENCES template(tid) ON DELETE CASCADE,
+    FOREIGN KEY (wid) REFERENCES workflow(wid) ON DELETE CASCADE
+    );
+
+COMMIT;
