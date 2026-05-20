@@ -407,39 +407,7 @@ class WorkflowResource extends LazyLogging {
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/persist")
   def persistWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): Workflow = {
-    val user = sessionUser.getUser
-    if (user == org.apache.texera.web.auth.GuestAuthFilter.GUEST) {
-      throw new ForbiddenException("Guest user does not have access to db.")
-    }
-
-    if (workflowOfUserExists(workflow.getWid, user.getUid)) {
-      WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = false)
-      workflowDao.update(workflow)
-    } else {
-      if (!WorkflowAccessResource.hasReadAccess(workflow.getWid, user.getUid)) {
-        // Check if this workflow exists in the database
-        val workflowExistsInDb =
-          workflow.getWid != null && workflowDao.existsById(workflow.getWid)
-        if (workflowExistsInDb) {
-          // User trying to persist an existing workflow without access - reject
-          throw new ForbiddenException("No sufficient access privilege.")
-        }
-        // This is a new workflow being created (wid is null or doesn't exist in DB)
-        workflow.setWid(null)
-        insertWorkflow(workflow, user)
-        WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = true)
-      } else if (WorkflowAccessResource.hasWriteAccess(workflow.getWid, user.getUid)) {
-        WorkflowVersionResource.insertVersion(workflow, insertingNewWorkflow = false)
-        // not owner but has write access
-        workflowDao.update(workflow)
-      } else {
-        // not owner and no write access -> rejected
-        throw new ForbiddenException("No sufficient access privilege.")
-      }
-    }
-
-    val wid = workflow.getWid
-    workflowDao.fetchOneByWid(wid)
+    this.workflowPersistService.persistWorkflow(workflow, sessionUser);
   }
 
   /**

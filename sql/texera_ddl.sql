@@ -182,8 +182,8 @@ CREATE TABLE IF NOT EXISTS template
 -- workflow_of_template
 CREATE TABLE IF NOT EXISTS workflow_of_template
 (
-    tid         INT NOT NULL,
-    wid         INT PRIMARY KEY,
+    tid         INT PRIMARY KEY,
+    wid         INT NOT NULL UNIQUE,
     parameters  TEXT,
     FOREIGN KEY (tid) REFERENCES template(tid) ON DELETE CASCADE,
     FOREIGN KEY (wid) REFERENCES workflow(wid) ON DELETE CASCADE

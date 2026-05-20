@@ -99,7 +99,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       });
   }
 
-  onJobFormValidated(): void {
+  public onJobFormSubmitted(): void {
     if (!this.form.valid) {
       this.notificationService.error("Invalid form.")
       return;
@@ -111,34 +111,19 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       });
 
     } else {
-      this.updateOperator().pipe(untilDestroyed(this)).subscribe();
+      this.applyJobFormToOperators().pipe(untilDestroyed(this)).subscribe();
     }
+  }
+
+  public onWorkspaceReady(): void {
+    this.applyJobFormToOperators().pipe(untilDestroyed(this)).subscribe();
   }
 
   private createTemplatedWorkflow(): Observable<number> {
-    const parameters = {
-      [this.PARAMETER_OP_ID]: {
-        "filePairs": [
-          {
-            "fileKey": "file_path",
-            "fileName": this.model.filePath
-          }
-        ],
-        "pairs": [
-          {
-            "key": "n_hvg",
-            "value": String(this.model.nHVG)
-          }
-        ]
-      }
-    }
-
-    return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {
-      parameters: parameters
-    })
+    return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {})
   }
 
-  private updateOperator(): Observable<Workflow> {
+  private applyJobFormToOperators(): Observable<Workflow> {
     this.updateOperatorForms();
     if (this.workflowChanged()) {
       this.updateOperatorProperties();

@@ -20,11 +20,11 @@
 import {Location} from "@angular/common";
 import {
   AfterViewInit,
-  Component,
+  Component, EventEmitter,
   HostListener,
   Input,
   OnDestroy,
-  OnInit,
+  OnInit, Output,
   ViewChild,
   ViewContainerRef
 } from "@angular/core";
@@ -82,6 +82,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() wid?: number = undefined;
   @Input() mode?: "workflow" | "template";
   @Input() isEmbedded: boolean = false;
+  @Output() workspaceReady = new EventEmitter<void>();
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
 
   context$ = combineLatest([
@@ -347,6 +348,8 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoading = false;
     this.registerAutoPersistWorkflow();
     this.triggerCenter();
+
+    this.workspaceReady.emit();
   }
 
   createWorkflowFromTemplate(template: Template): Workflow {

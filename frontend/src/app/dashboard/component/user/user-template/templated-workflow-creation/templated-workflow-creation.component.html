@@ -16,7 +16,7 @@
  specific language governing permissions and limitations
  under the License.
 -->
-<h2 class="job-title">Create Workflow from Template:</h2>
+<h2 class="job-title">Build Workflow from Template:</h2>
 <form [formGroup]="form">
   <formly-form
     [model]="model"
@@ -31,13 +31,18 @@
   nz-button
   nzType="primary"
   [disabled]="!form.valid"
-  (click)="onJobFormValidated()">
-  VALIDATE
+  (click)="onJobFormSubmitted()">
+  SUBMIT
 </button>
 
 <div class="readonly-embedded-workspace-container" *ngIf="wid">
   <div class="inner-scale">
-    <texera-workspace [wid]="wid" [isEmbedded]="true" [mode]="'workflow'">
+    <texera-workspace
+      [wid]="wid"
+      [isEmbedded]="true"
+      [mode]="'workflow'"
+      (workspaceReady)="onWorkspaceReady()"
+    >
     </texera-workspace>
   </div>
 </div>
