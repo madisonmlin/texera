@@ -28,18 +28,17 @@ import { WorkflowActionService } from "../../../../../workspace/service/workflow
 import { Workflow, WorkflowContent } from "../../../../../common/type/workflow";
 import { WorkflowPersistService } from "../../../../../common/service/workflow-persist/workflow-persist.service";
 import { AppSettings } from "../../../../../common/app-setting";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
+import { HttpClient } from "@angular/common/http";
 import { isEqual } from "lodash-es";
-import { catchError, debounceTime, forkJoin, merge, Observable, of, Subscription, tap } from "rxjs";
+import { debounceTime, forkJoin, merge, Observable, of, Subscription, tap } from "rxjs";
 import { cloneDeep } from "lodash";
 import { ActivatedRoute } from "@angular/router";
 import { TemplateService } from "../../../../service/user/template/template.service";
 import { OperatorMetadataService } from "../../../../../workspace/service/operator-metadata/operator-metadata.service";
-import { OperatorPredicate, OperatorLink } from "../../../../../workspace/types/workflow-common.interface";
-import { WorkflowCompilingService, WORKFLOW_COMPILATION_ENDPOINT } from "../../../../../workspace/service/compile-workflow/workflow-compiling.service";
-import { OperatorPortSchemaMap, PortSchema, WorkflowCompilationResponse } from "../../../../../workspace/types/workflow-compiling.interface";
+import { OperatorPredicate } from "../../../../../workspace/types/workflow-common.interface";
+import { WorkflowCompilingService } from "../../../../../workspace/service/compile-workflow/workflow-compiling.service";
+import { DynamicSchemaService } from "../../../../../workspace/service/dynamic-schema/dynamic-schema.service";
 import { OperatorSchema } from "../../../../../workspace/types/operator-schema.interface";
-import { serializePortIdentity } from "../../../../../common/util/port-identity-serde";
 
 interface ConfigurableSection {
   operatorID: string;
@@ -66,12 +65,15 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
 
   workflow: Workflow | undefined;
 
-  // Used to skip redundant rebuilds when a value change doesn't alter any operator's
-  // enriched schema (e.g. typing into a non-schema-affecting numeric field).
-  private currentSchemasFingerprint: string = "";
-  // Subscription that fans in value-changes from every section's form and triggers
-  // a debounced recompile. Recreated whenever sections are rebuilt.
+  // Subscription that fans in value-changes from every section's form and pushes them into
+  // workflowActionService so the regular WorkflowCompilingService → DynamicSchemaService
+  // pipeline takes care of recompiling + propagating schemas. Recreated whenever sections
+  // are rebuilt because each rebuild creates new FormGroup instances.
   private formChangesSub: Subscription | undefined;
+  // Re-entrancy guard: when we push our model values into workflowActionService, the resulting
+  // schema-change events would otherwise cause us to rebuild sections (and re-emit value
+  // changes that we'd push back in). Set during the push, cleared after a microtask.
+  private suppressFormPropagation = false;
 
   constructor(
     private notificationService: NotificationService,
@@ -80,6 +82,11 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     private templateService: TemplateService,
     private workflowPersistService: WorkflowPersistService,
     private operatorMetadataService: OperatorMetadataService,
+    private dynamicSchemaService: DynamicSchemaService,
+    // injected to ensure the singleton WorkflowCompilingService is instantiated (it subscribes
+    // to texera graph streams in its constructor, which is what triggers /compile + schema
+    // propagation when we reloadWorkflow / setOperatorProperty below)
+    private workflowCompilingService: WorkflowCompilingService,
     private formlyJsonschema: FormlyJsonschema,
     private route: ActivatedRoute,
     private http: HttpClient
@@ -195,9 +202,15 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       );
       if (fields.length === 0) return;
 
+      // Seed the model from the live graph (which holds the user's latest pushed values),
+      // not the original template — otherwise rebuilds triggered by schema-change events
+      // would reset the user's just-picked file/value back to the saved template value.
+      const livePropsSource: Record<string, any> = this.workflowActionService.getTexeraGraph().hasOperator(op.operatorID)
+        ? this.workflowActionService.getTexeraGraph().getOperator(op.operatorID).operatorProperties
+        : op.operatorProperties;
       const model: Record<string, any> = {};
       configurableKeys.forEach(key => {
-        model[key] = cloneDeep(op.operatorProperties?.[key]);
+        model[key] = cloneDeep(livePropsSource?.[key]);
       });
 
       sections.push({
@@ -210,93 +223,6 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     });
 
     return sections;
-  }
-
-  /**
-   * Compile the template's workflow content via the /compile endpoint to obtain output schemas
-   * for every operator. Mirrors ExecuteWorkflowService.getLogicalPlanRequest, but works off raw
-   * template content (no live WorkflowGraph required).
-   */
-  private compileTemplate(content: WorkflowContent): Observable<WorkflowCompilationResponse | undefined> {
-    const opById = new Map(content.operators.map(op => [op.operatorID, op]));
-
-    const operators = content.operators.map(op => ({
-      ...op.operatorProperties,
-      operatorID: op.operatorID,
-      operatorType: op.operatorType,
-      inputPorts: op.inputPorts,
-      outputPorts: op.outputPorts,
-    }));
-
-    const links = content.links.map((link: OperatorLink) => {
-      const srcOp = opById.get(link.source.operatorID);
-      const tgtOp = opById.get(link.target.operatorID);
-      const fromPortIdx = srcOp?.outputPorts.findIndex(p => p.portID === link.source.portID) ?? -1;
-      const toPortIdx = tgtOp?.inputPorts.findIndex(p => p.portID === link.target.portID) ?? -1;
-      return {
-        fromOpId: link.source.operatorID,
-        fromPortId: { id: fromPortIdx, internal: false },
-        toOpId: link.target.operatorID,
-        toPortId: { id: toPortIdx, internal: false },
-      };
-    });
-
-    const body = { operators, links, opsToReuseResult: [], opsToViewResult: [] };
-
-    return this.http
-      .post<WorkflowCompilationResponse>(
-        `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}`,
-        JSON.stringify(body),
-        { headers: new HttpHeaders({ "Content-Type": "application/json" }) }
-      )
-      .pipe(
-        catchError(err => {
-          console.warn("template workflow compile failed; attribute dropdowns will fall back to text inputs", err);
-          return of(undefined);
-        })
-      );
-  }
-
-  /**
-   * For each operator in the template, derive its input port schema map (port-index keyed) from
-   * the compile response's output schemas + the template's links, then apply
-   * WorkflowCompilingService.setOperatorInputAttrs to get a schema with enum-populated
-   * attribute fields ready for formly.
-   */
-  private buildEnrichedSchemas(
-    content: WorkflowContent,
-    outputSchemas: Record<string, OperatorPortSchemaMap>
-  ): Map<string, OperatorSchema> {
-    const enriched = new Map<string, OperatorSchema>();
-    const opById = new Map(content.operators.map(op => [op.operatorID, op]));
-
-    content.operators.forEach(op => {
-      const inputLinks = content.links.filter(link => link.target.operatorID === op.operatorID);
-      const inputSchemaMap: Record<string, PortSchema | undefined> = {};
-
-      op.inputPorts.forEach((inputPort, portIndex) => {
-        const portKey = serializePortIdentity({ id: portIndex, internal: false });
-        const linksToThisPort = inputLinks.filter(link => link.target.portID === inputPort.portID);
-        const firstLink = linksToThisPort[0];
-        if (!firstLink) {
-          inputSchemaMap[portKey] = undefined;
-          return;
-        }
-        const srcOp = opById.get(firstLink.source.operatorID);
-        const srcPortIdx = srcOp?.outputPorts.findIndex(p => p.portID === firstLink.source.portID) ?? -1;
-        if (srcPortIdx < 0) {
-          inputSchemaMap[portKey] = undefined;
-          return;
-        }
-        const srcPortKey = serializePortIdentity({ id: srcPortIdx, internal: false });
-        inputSchemaMap[portKey] = outputSchemas[firstLink.source.operatorID]?.[srcPortKey];
-      });
-
-      const baseSchema = this.operatorMetadataService.getOperatorSchema(op.operatorType);
-      enriched.set(op.operatorID, WorkflowCompilingService.setOperatorInputAttrs(baseSchema, inputSchemaMap));
-    });
-
-    return enriched;
   }
 
   ngOnInit(): void {
@@ -319,74 +245,80 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
           this.operatorIdToProperties[op.operatorID] = cloneDeep(op.operatorProperties);
         });
 
-        this.compileTemplate(template.content)
-          .pipe(untilDestroyed(this))
-          .subscribe(response => {
-            const outputSchemas = response?.operatorOutputSchemas ?? {};
-            const enriched = this.buildEnrichedSchemas(template.content, outputSchemas);
-            this.currentSchemasFingerprint = this.fingerprintSchemas(enriched);
-            this.rebuildSections(template.content, enriched);
-          });
+        // Hand the template content to the same plumbing the live editor uses:
+        // WorkflowActionService owns the texera graph, WorkflowCompilingService listens to
+        // it and re-compiles on every property change, and DynamicSchemaService stores the
+        // resulting enum-populated dynamic schema for each operator. We subscribe to that
+        // stream to know when to rebuild our configurable-properties form so attribute
+        // dropdowns reflect the latest upstream schema.
+        this.workflowActionService.destroySharedModel();
+        this.workflowActionService.setNewSharedModel(undefined, this.userService.getCurrentUser());
+        this.workflowActionService.reloadWorkflow({
+          wid: undefined,
+          name: "template-preview",
+          description: undefined,
+          creationTime: undefined,
+          lastModifiedTime: undefined,
+          isPublished: 0,
+          readonly: false,
+          content: template.content,
+        });
+
+        this.rebuildSectionsFromDynamicSchemas();
+
+        this.dynamicSchemaService
+          .getOperatorDynamicSchemaChangedStream()
+          .pipe(debounceTime(50), untilDestroyed(this))
+          .subscribe(() => this.rebuildSectionsFromDynamicSchemas());
       });
   }
 
   /**
-   * Replace sections with freshly-built ones (preserving user-entered model values via
-   * `buildLiveContent`, which is what the caller feeds in as `content`) and re-attach the
-   * form-change listener to the new section forms.
+   * Re-create the configurable-section list using whatever DynamicSchemaService currently has
+   * for each operator. After a /compile cycle completes, the dynamic schema for each operator
+   * has the latest enum (e.g. column names from the upstream CSVFileScan) baked into the
+   * attribute-selector properties — so reconverting via FormlyJsonschema yields select-typed
+   * formly fields without any custom enum injection.
    */
-  private rebuildSections(content: WorkflowContent, enriched: Map<string, OperatorSchema>): void {
+  private rebuildSectionsFromDynamicSchemas(): void {
+    if (!this.template) return;
     this.formChangesSub?.unsubscribe();
-    this.sections = this.buildSectionsFromTemplate({ content }, enriched);
+    const enriched = new Map<string, OperatorSchema>();
+    this.template.operators.forEach(op => {
+      if (this.dynamicSchemaService.dynamicSchemaExists(op.operatorID)) {
+        enriched.set(op.operatorID, this.dynamicSchemaService.getDynamicSchema(op.operatorID));
+      }
+    });
+    this.sections = this.buildSectionsFromTemplate({ content: this.template }, enriched);
     this.subscribeToFormChanges();
   }
 
   /**
-   * Listen for any value change across all section forms. On change, re-run /compile with the
-   * live (model-merged) operator properties so downstream operators get fresh input schemas.
-   * Skips the rebuild if the new enriched schemas are identical to the current ones, which
-   * also stops the initial control-init valueChanges burst from causing rebuild loops.
+   * Pipe user edits from each section's form into workflowActionService.setOperatorProperty,
+   * which triggers the regular compile pipeline. We suppress propagation during the push
+   * itself so the resulting dynamic-schema-changed events don't bounce back into another
+   * setOperatorProperty round-trip.
    */
   private subscribeToFormChanges(): void {
     if (this.sections.length === 0) return;
     this.formChangesSub = merge(...this.sections.map(s => s.form.valueChanges))
-      .pipe(debounceTime(400), untilDestroyed(this))
-      .subscribe(() => this.recompileAndRebuild());
+      .pipe(debounceTime(300), untilDestroyed(this))
+      .subscribe(() => this.pushFormChangesToGraph());
   }
 
-  private recompileAndRebuild(): void {
-    if (!this.template) return;
-    const liveContent = this.buildLiveContent(this.template);
-    this.compileTemplate(liveContent)
-      .pipe(untilDestroyed(this))
-      .subscribe(response => {
-        const outputSchemas = response?.operatorOutputSchemas ?? {};
-        const enriched = this.buildEnrichedSchemas(liveContent, outputSchemas);
-        const fingerprint = this.fingerprintSchemas(enriched);
-        if (fingerprint === this.currentSchemasFingerprint) return;
-        this.currentSchemasFingerprint = fingerprint;
-        this.rebuildSections(liveContent, enriched);
+  private pushFormChangesToGraph(): void {
+    this.suppressFormPropagation = true;
+    try {
+      this.sections.forEach(section => {
+        const graphOp = this.workflowActionService.getTexeraGraph().getOperator(section.operatorID);
+        if (!graphOp) return;
+        const merged = { ...graphOp.operatorProperties, ...section.model };
+        if (!isEqual(graphOp.operatorProperties, merged)) {
+          this.workflowActionService.setOperatorProperty(section.operatorID, merged);
+        }
       });
-  }
-
-  /**
-   * Project the user's current section-model values back onto the loaded template content so
-   * that downstream schema propagation sees the latest configurable values (e.g. the file the
-   * user just picked in a CSVFileScan).
-   */
-  private buildLiveContent(base: WorkflowContent): WorkflowContent {
-    const modelByOp = new Map(this.sections.map(s => [s.operatorID, s.model]));
-    return {
-      ...base,
-      operators: base.operators.map(op => {
-        const live = modelByOp.get(op.operatorID);
-        if (!live) return op;
-        return { ...op, operatorProperties: { ...op.operatorProperties, ...live } };
-      }),
-    };
-  }
-
-  private fingerprintSchemas(enriched: Map<string, OperatorSchema>): string {
-    return JSON.stringify(Array.from(enriched.entries()).map(([id, s]) => [id, s.jsonSchema]));
+    } finally {
+      Promise.resolve().then(() => (this.suppressFormPropagation = false));
+    }
   }
 }
