@@ -31,26 +31,23 @@ import { AppSettings } from "../../../../../common/app-setting";
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { isEqual } from "lodash-es";
 import { catchError, debounceTime, EMPTY, forkJoin, merge, Observable, of, Subscription, tap } from "rxjs";
-import { filter, map, switchMap } from "rxjs/operators";
+import {filter, finalize, map, switchMap} from "rxjs/operators";
 import { cloneDeep } from "lodash";
 import { ActivatedRoute } from "@angular/router";
 import { TemplateService } from "../../../../service/user/template/template.service";
 import { OperatorMetadataService } from "../../../../../workspace/service/operator-metadata/operator-metadata.service";
-import { OperatorLink, OperatorPredicate } from "../../../../../workspace/types/workflow-common.interface";
+import { OperatorPredicate } from "../../../../../workspace/types/workflow-common.interface";
 import {
   WORKFLOW_COMPILATION_ENDPOINT,
   WorkflowCompilingService,
 } from "../../../../../workspace/service/compile-workflow/workflow-compiling.service";
 import { DynamicSchemaService } from "../../../../../workspace/service/dynamic-schema/dynamic-schema.service";
 import { OperatorSchema } from "../../../../../workspace/types/operator-schema.interface";
-import { LogicalLink, LogicalOperator, LogicalPlan } from "../../../../../workspace/types/execute-workflow.interface";
 import {
   OperatorPortSchemaMap,
-  PortSchema,
   WorkflowCompilationResponse,
 } from "../../../../../workspace/types/workflow-compiling.interface";
-import { parseLogicalOperatorPortID } from "../../../../../common/util/logical-operator-port-serde";
-import { serializePortIdentity } from "../../../../../common/util/port-identity-serde";
+import {TemplatedWorkflowDraftService} from "./service/templated-workflow-draft.service";
 
 interface ConfigurableSection {
   operatorID: string;
@@ -64,29 +61,19 @@ interface ConfigurableSection {
 @Component({
   templateUrl: "./templated-workflow-creation.component.html",
   styleUrls: ["./templated-workflow-creation.component.scss"],
+  providers: [TemplatedWorkflowDraftService],
 })
-export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit {
+export class TemplatedWorkflowCreationComponent implements AfterViewInit {
   public tid: number | undefined;
   public wid: number | undefined;
   public template: WorkflowContent | undefined;
-
-  // operatorID -> staged snapshot of that operator's full properties.
-  // This is mutated while the user edits the configurable form, but it is not
-  // copied into WorkflowActionService until SUBMIT.
-  public operatorIdToProperties: Record<string, Record<string, any>> = {};
 
   public sections: ConfigurableSection[] = [];
   public isLogin: boolean = this.userService.isLogin();
   public currentUid: number | undefined;
 
-  workflow: Workflow | undefined;
-
   // Recreated whenever sections are rebuilt because each rebuild creates new FormGroup instances.
   private formChangesSub: Subscription | undefined;
-
-  // Draft-only dynamic schemas produced by compiling staged operator properties.
-  // These are used for Formly dropdown rebuilding before SUBMIT.
-  private draftDynamicSchemas = new Map<string, OperatorSchema>();
 
   // The first submit creates the workflow. Then the embedded workspace loads the newly created
   // workflow and emits workspaceReady. This flag makes sure workspaceReady applies staged values
@@ -98,6 +85,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     private userService: UserService,
     private workflowActionService: WorkflowActionService,
     private templateService: TemplateService,
+    private templatedWorkflowDraftService: TemplatedWorkflowDraftService,
     private workflowPersistService: WorkflowPersistService,
     private operatorMetadataService: OperatorMetadataService,
     private dynamicSchemaService: DynamicSchemaService,
@@ -144,7 +132,12 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     } else {
       this.applyJobFormToOperators()
         .pipe(untilDestroyed(this))
-        .subscribe();
+        .subscribe({
+          error: err => {
+            console.warn("Failed to update templated workflow", err);
+            this.notificationService.error("Failed to update workflow.");
+          },
+        });
     }
   }
 
@@ -157,11 +150,19 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       return;
     }
 
-    this.pendingApplyAfterCreate = false;
-
     this.applyJobFormToOperators()
-      .pipe(untilDestroyed(this))
-      .subscribe();
+      .pipe(
+        finalize(() => {
+          this.pendingApplyAfterCreate = false;
+        }),
+        untilDestroyed(this)
+      )
+      .subscribe({
+        error: err => {
+          console.warn("Failed to apply templated workflow properties", err);
+          this.notificationService.error("Failed to apply workflow properties.");
+        },
+      });
   }
 
   private createTemplatedWorkflow(): Observable<number> {
@@ -180,10 +181,12 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
           this.notificationService.success("Workflow updated.");
         })
       );
-    } else {
-      this.notificationService.info("No changes made to the workflow.");
-      return of(this.workflowActionService.getWorkflow());
     }
+
+    if (!this.pendingApplyAfterCreate) {
+      this.notificationService.info("No changes made to the workflow.");
+    }
+    return of(this.workflowActionService.getWorkflow());
   }
 
   private mergeFormValuesIntoOperatorProperties(): void {
@@ -193,25 +196,26 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
   }
 
   private mergeSectionFormValuesIntoOperatorProperties(section: ConfigurableSection): void {
-    this.operatorIdToProperties[section.operatorID] = {
-      ...this.operatorIdToProperties[section.operatorID],
-      ...cloneDeep(section.model),
-    };
+    this.templatedWorkflowDraftService.mergeSectionModel(section.operatorID, section.model);
   }
 
   private writeOperatorPropertiesToGraph(): void {
     for (const section of this.sections) {
       this.workflowActionService.setOperatorProperty(
         section.operatorID,
-        this.operatorIdToProperties[section.operatorID]
+        this.templatedWorkflowDraftService.getOperatorProperties(section.operatorID)
       );
     }
   }
 
   private workflowChanged(): boolean {
     return this.sections.some(section => {
-      const operator = this.workflowActionService.getTexeraGraph().getOperator(section.operatorID);
-      return !isEqual(this.operatorIdToProperties[section.operatorID], operator.operatorProperties);
+      const liveOperator = this.workflowActionService.getTexeraGraph().getOperator(section.operatorID);
+
+      return this.templatedWorkflowDraftService.operatorPropertiesChanged(
+        section.operatorID,
+        liveOperator.operatorProperties
+      );
     });
   }
 
@@ -254,7 +258,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       // Seed the model from the staged draft, not the live graph.
       // This preserves unsaved user edits across schema-triggered form rebuilds.
       const draftPropsSource: Record<string, any> =
-        this.operatorIdToProperties[op.operatorID] ?? op.operatorProperties;
+        this.templatedWorkflowDraftService.getOperatorProperties(op.operatorID) ?? op.operatorProperties;
 
       const model: Record<string, any> = {};
       configurableKeys.forEach(key => {
@@ -273,10 +277,6 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     return sections;
   }
 
-  ngOnInit(): void {
-    return;
-  }
-
   ngAfterViewInit(): void {
     this.tid = this.route.snapshot.params.tid;
     if (!this.tid) return;
@@ -288,13 +288,8 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       .pipe(untilDestroyed(this))
       .subscribe(({ template }) => {
         this.template = template.content;
-        this.operatorIdToProperties = {};
-        this.draftDynamicSchemas.clear();
         this.pendingApplyAfterCreate = false;
-
-        template.content.operators.forEach(op => {
-          this.operatorIdToProperties[op.operatorID] = cloneDeep(op.operatorProperties);
-        });
+        this.templatedWorkflowDraftService.initialize(template.content);
 
         // Load the template into WorkflowActionService for initial preview/schema setup.
         // User form edits after this point should use compileDraftWorkflowForDynamicSchemas()
@@ -338,8 +333,8 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
     const enriched = new Map<string, OperatorSchema>();
 
     this.template.operators.forEach(op => {
-      if (this.draftDynamicSchemas.has(op.operatorID)) {
-        enriched.set(op.operatorID, this.draftDynamicSchemas.get(op.operatorID) as OperatorSchema);
+      if (this.templatedWorkflowDraftService.hasDraftDynamicSchema(op.operatorID)) {
+        enriched.set(op.operatorID, this.templatedWorkflowDraftService.getDraftDynamicSchema(op.operatorID) as OperatorSchema);
       } else if (this.dynamicSchemaService.dynamicSchemaExists(op.operatorID)) {
         enriched.set(op.operatorID, this.dynamicSchemaService.getDynamicSchema(op.operatorID));
       }
@@ -379,17 +374,15 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
   }
 
   private hasSchemaDrivingChange(section: ConfigurableSection, nextModel: Record<string, any>): boolean {
-    const draftFileName = this.operatorIdToProperties[section.operatorID]?.fileName;
-
-    return (
-      nextModel.fileName !== undefined &&
-      nextModel.fileName !== "" &&
-      nextModel.fileName !== draftFileName
-    );
+    return this.templatedWorkflowDraftService.hasSchemaDrivingChange(section.operatorID, nextModel);
   }
 
   private compileDraftWorkflowForDynamicSchemas(): Observable<WorkflowCompilationResponse> {
-    const logicalPlan = this.getDraftLogicalPlan();
+    if (!this.template) {
+      return EMPTY;
+    }
+
+    const logicalPlan = this.templatedWorkflowDraftService.buildDraftLogicalPlan(this.template);
 
     const body = {
       operators: logicalPlan.operators,
@@ -416,113 +409,23 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit, OnInit
       );
   }
 
-  private getDraftLogicalPlan(): LogicalPlan {
-    if (!this.template) {
-      return { operators: [], links: [], opsToViewResult: [], opsToReuseResult: [] };
-    }
-
-    const operators: LogicalOperator[] = this.template.operators.map(op => ({
-      ...(this.operatorIdToProperties[op.operatorID] ?? op.operatorProperties),
-      operatorID: op.operatorID,
-      operatorType: op.operatorType,
-      inputPorts: op.inputPorts,
-      outputPorts: op.outputPorts,
-    }));
-
-    const links: LogicalLink[] = this.template.links
-      .map(link => this.toLogicalLink(link))
-      .filter((link): link is LogicalLink => link !== undefined);
-
-    return { operators, links, opsToViewResult: [], opsToReuseResult: [] };
-  }
-
-  /**
-   * Kept intentionally close to the existing implementation because changing port-ID
-   * conversion requires checking Texera's OperatorLink/LogicalLink conventions elsewhere.
-   */
-  private toLogicalLink(link: OperatorLink): LogicalLink | undefined {
-    if (!this.template) return undefined;
-
-    const source = this.template.operators.find(op => op.operatorID === link.source.operatorID);
-    const target = this.template.operators.find(op => op.operatorID === link.target.operatorID);
-
-    if (!source || !target) return undefined;
-
-    const outputPortIdx = source.outputPorts.findIndex(port => port.portID === link.source.portID);
-    const inputPortIdx = target.inputPorts.findIndex(port => port.portID === link.target.portID);
-
-    if (outputPortIdx < 0 || inputPortIdx < 0) return undefined;
-
-    return {
-      fromOpId: link.source.operatorID,
-      fromPortId: { id: outputPortIdx, internal: false },
-      toOpId: link.target.operatorID,
-      toPortId: { id: inputPortIdx, internal: false },
-    };
-  }
-
   private applyDraftSchemaPropagationResult(outputSchemas: Record<string, OperatorPortSchemaMap>): void {
     if (!this.template) return;
 
-    this.template.operators.forEach(op => {
-      const currentDynamicSchema =
-        this.draftDynamicSchemas.get(op.operatorID) ??
-        (this.dynamicSchemaService.dynamicSchemaExists(op.operatorID)
-          ? this.dynamicSchemaService.getDynamicSchema(op.operatorID)
-          : this.operatorMetadataService.getOperatorSchema(op.operatorType));
-
-      const inputSchema = this.extractOperatorInputPortSchemaMap(op, outputSchemas);
-
-      const newDynamicSchema = inputSchema
-        ? WorkflowCompilingService.setOperatorInputAttrs(currentDynamicSchema, inputSchema)
-        : currentDynamicSchema.additionalMetadata.inputPorts.length > 0
-          ? WorkflowCompilingService.restoreOperatorInputAttrs(currentDynamicSchema)
-          : currentDynamicSchema;
-
-      this.draftDynamicSchemas.set(op.operatorID, newDynamicSchema);
+    this.templatedWorkflowDraftService.applyDraftSchemaPropagationResult({
+      content: this.template,
+      outputSchemas,
+      getBaseSchema: op => this.getBaseSchemaForOperator(op),
     });
 
     this.rebuildSectionsFromDynamicSchemas();
   }
 
-  private extractOperatorInputPortSchemaMap(
-    operator: OperatorPredicate,
-    outputSchemas: Record<string, OperatorPortSchemaMap>
-  ): OperatorPortSchemaMap | undefined {
-    if (!this.template) return undefined;
+  private getBaseSchemaForOperator(op: OperatorPredicate): OperatorSchema {
+    if (this.dynamicSchemaService.dynamicSchemaExists(op.operatorID)) {
+      return this.dynamicSchemaService.getDynamicSchema(op.operatorID);
+    }
 
-    const inputLinks = this.template.links.filter(link => link.target.operatorID === operator.operatorID);
-    if (!inputLinks.length) return undefined;
-
-    const inputPortSchemaMap = new Map<string, PortSchema | undefined>();
-
-    operator.inputPorts.forEach((_, portIndex) => {
-      const portId = serializePortIdentity({ id: portIndex, internal: false });
-
-      const linksToThisPort = inputLinks.filter(link => {
-        const inputPort = parseLogicalOperatorPortID(link.target.portID);
-        return inputPort?.portNumber === portIndex;
-      });
-
-      if (linksToThisPort.length === 0) {
-        inputPortSchemaMap.set(portId, undefined);
-        return;
-      }
-
-      const schemas = linksToThisPort.map(link => {
-        const sourcePort = parseLogicalOperatorPortID(link.source.portID);
-        if (!sourcePort) return undefined;
-
-        return outputSchemas[link.source.operatorID]?.[
-          serializePortIdentity({ id: sourcePort.portNumber, internal: false })
-          ];
-      });
-
-      inputPortSchemaMap.set(portId, schemas[0]);
-    });
-
-    if (!inputPortSchemaMap.size) return undefined;
-
-    return Object.fromEntries(inputPortSchemaMap);
+    return this.operatorMetadataService.getOperatorSchema(op.operatorType);
   }
 }

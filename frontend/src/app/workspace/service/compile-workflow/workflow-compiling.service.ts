@@ -42,6 +42,7 @@ import { WorkflowGraphReadonly } from "../workflow-graph/model/workflow-graph";
 import { serializePortIdentity } from "../../../common/util/port-identity-serde";
 import { addCompilationError, areAllPortSchemasEqual } from "../../../common/util/workflow-compilation-utils";
 import { parseLogicalOperatorPortID } from "../../../common/util/logical-operator-port-serde";
+import {WorkflowSchemaPropagationUtil} from "./workflow-schema-propagation.util";
 
 // endpoint for workflow compile
 export const WORKFLOW_COMPILATION_ENDPOINT = "compile";
@@ -226,56 +227,20 @@ export class WorkflowCompilingService {
     const dynamicSchema = this.dynamicSchemaService.getDynamicSchema(operatorID);
     if (!dynamicSchema) return undefined;
 
-    const inputPortSchemaMap = new Map<string, PortSchema | undefined>();
-
-    dynamicSchema.additionalMetadata.inputPorts.forEach((inputPort, portIndex) => {
-      const portId = serializePortIdentity({ id: portIndex, internal: false });
-      inputPortSchemaMap.set(portId, undefined);
-
-      // Find all links that connect to this input port
-      const linksToThisPort = inputLinks.filter(link => {
-        const inputPort = parseLogicalOperatorPortID(link.target.portID);
-        if (!inputPort) return false;
-        return inputPort.portNumber === portIndex;
-      });
-
-      if (linksToThisPort.length > 0) {
-        // Check if multiple links have different schemas
-        const schemas: (PortSchema | undefined)[] = linksToThisPort.map(link => {
-          const sourcePortSchemaMap = outputSchemas[link.source.operatorID];
-          if (!sourcePortSchemaMap) {
-            return undefined;
-          }
-
-          const outputPort = parseLogicalOperatorPortID(link.source.portID);
-          if (!outputPort) {
-            return undefined;
-          }
-
-          return sourcePortSchemaMap[serializePortIdentity({ id: outputPort.portNumber, internal: false })];
-        });
-
-        // Check if all schemas are the same using utility function
-        if (schemas.length > 1 && !areAllPortSchemasEqual(schemas)) {
-          // Set compilation state to failed and add error using utility function
-          this.currentCompilationStateInfo = addCompilationError(
-            this.currentCompilationStateInfo,
-            operatorID,
-            `Multiple links with different schemas connected to the same input port ${portIndex}`,
-            `Port ${portIndex} received ${schemas.length} different schemas (some may be undefined)`
-          );
-          return undefined;
-        }
-
-        // All port schemas of this input port has been checked to be the same, use the first schema to set
-        if (schemas.length > 0) {
-          inputPortSchemaMap.set(portId, schemas[0]);
-        }
-      }
+    return WorkflowSchemaPropagationUtil.extractInputPortSchemaMap({
+      operatorID,
+      inputPortCount: dynamicSchema.additionalMetadata.inputPorts.length,
+      inputLinks,
+      outputSchemas,
+      onSchemaConflict: (portIndex, schemas) => {
+        this.currentCompilationStateInfo = addCompilationError(
+          this.currentCompilationStateInfo,
+          operatorID,
+          `Multiple links with different schemas connected to the same input port ${portIndex}`,
+          `Port ${portIndex} received ${schemas.length} different schemas (some may be undefined)`
+        );
+      },
     });
-
-    if (!inputPortSchemaMap.size) return undefined;
-    return Object.fromEntries(inputPortSchemaMap);
   }
 
   /**
