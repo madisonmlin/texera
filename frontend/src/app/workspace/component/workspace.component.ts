@@ -82,7 +82,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() wid?: number = undefined;
   @Input() mode?: "workflow" | "template";
   @Input() isEmbedded: boolean = false;
-  @Output() workspaceReady = new EventEmitter<void>();
+  @Output() workspaceReady = new EventEmitter<number | undefined>();
   @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
 
   context$ = combineLatest([
@@ -349,7 +349,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     this.registerAutoPersistWorkflow();
     this.triggerCenter();
 
-    this.workspaceReady.emit();
+    this.workspaceReady.emit(workflow.wid ?? this.wid);
   }
 
   createWorkflowFromTemplate(template: Template): Workflow {
