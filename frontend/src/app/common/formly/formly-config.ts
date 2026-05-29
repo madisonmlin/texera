@@ -28,9 +28,6 @@ import { InputAutoCompleteComponent } from "../../workspace/component/input-auto
 import { CollabWrapperComponent } from "./collab-wrapper/collab-wrapper/collab-wrapper.component";
 import { FormlyRepeatDndComponent } from "./repeat-dnd/repeat-dnd.component";
 import {
-  WorkflowTemplateSelectionComponent
-} from "../../dashboard/component/user/user-template/workflow-template-select/workflow-template-selection.component";
-import {
   ConfigurablePropertyWrapperComponent
 } from "../../workspace/component/property-editor/operator-property-edit-frame/configurable-property-wrapper/configurable-property-wrapper.component";
 
@@ -83,7 +80,6 @@ export const TEXERA_FORMLY_CONFIG = {
     { name: "multischema", component: MultiSchemaTypeComponent },
     { name: "codearea", component: CodeareaCustomTemplateComponent },
     { name: "inputautocomplete", component: InputAutoCompleteComponent, wrappers: ["form-field"] },
-    { name: "workflowtemplateselection", component: WorkflowTemplateSelectionComponent },
     { name: "repeat-section-dnd", component: FormlyRepeatDndComponent },
   ],
   wrappers: [

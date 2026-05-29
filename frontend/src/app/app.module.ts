@@ -190,9 +190,6 @@ import { UserComputingUnitComponent } from "./dashboard/component/user/user-comp
 import { UserComputingUnitListItemComponent } from "./dashboard/component/user/user-computing-unit/user-computing-unit-list-item/user-computing-unit-list-item.component";
 import { TemplatedWorkflowCreationComponent } from "./dashboard/component/user/user-template/templated-workflow-creation/templated-workflow-creation.component";
 import {
-  WorkflowTemplateSelectionComponent
-} from "./dashboard/component/user/user-template/workflow-template-select/workflow-template-selection.component";
-import {
   ConfigurablePropertyWrapperComponent
 } from "./workspace/component/property-editor/operator-property-edit-frame/configurable-property-wrapper/configurable-property-wrapper.component";
 
@@ -269,7 +266,6 @@ registerLocaleData(en);
     AgentChatComponent,
     AgentRegistrationComponent,
     InputAutoCompleteComponent,
-    WorkflowTemplateSelectionComponent,
     FileSelectionComponent,
     CollabWrapperComponent,
     AboutComponent,
