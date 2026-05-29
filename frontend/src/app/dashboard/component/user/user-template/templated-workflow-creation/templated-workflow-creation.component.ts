@@ -17,37 +17,38 @@
  * under the License.
  */
 
-import { FormlyFieldConfig } from "@ngx-formly/core";
-import { FormlyJsonschema } from "@ngx-formly/core/json-schema";
-import { FormGroup } from "@angular/forms";
-import { AfterViewInit, Component, OnInit } from "@angular/core";
-import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { NotificationService } from "../../../../../common/service/notification/notification.service";
-import { UserService } from "../../../../../common/service/user/user.service";
-import { WorkflowActionService } from "../../../../../workspace/service/workflow-graph/model/workflow-action.service";
-import { Workflow, WorkflowContent } from "../../../../../common/type/workflow";
-import { WorkflowPersistService } from "../../../../../common/service/workflow-persist/workflow-persist.service";
-import { AppSettings } from "../../../../../common/app-setting";
-import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { isEqual } from "lodash-es";
-import { catchError, debounceTime, EMPTY, forkJoin, merge, Observable, of, Subscription, tap } from "rxjs";
+import {FormlyFieldConfig} from "@ngx-formly/core";
+import {FormlyJsonschema} from "@ngx-formly/core/json-schema";
+import {FormGroup} from "@angular/forms";
+import {AfterViewInit, Component} from "@angular/core";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
+import {NotificationService} from "../../../../../common/service/notification/notification.service";
+import {UserService} from "../../../../../common/service/user/user.service";
+import {WorkflowActionService} from "../../../../../workspace/service/workflow-graph/model/workflow-action.service";
+import {Workflow, WorkflowContent} from "../../../../../common/type/workflow";
+import {WorkflowPersistService} from "../../../../../common/service/workflow-persist/workflow-persist.service";
+import {AppSettings} from "../../../../../common/app-setting";
+import {HttpClient, HttpHeaders} from "@angular/common/http";
+import {catchError, debounceTime, EMPTY, forkJoin, merge, Observable, of, Subscription, tap} from "rxjs";
 import {filter, finalize, map, switchMap} from "rxjs/operators";
-import { cloneDeep } from "lodash";
-import { ActivatedRoute } from "@angular/router";
-import { TemplateService } from "../../../../service/user/template/template.service";
-import { OperatorMetadataService } from "../../../../../workspace/service/operator-metadata/operator-metadata.service";
-import { OperatorPredicate } from "../../../../../workspace/types/workflow-common.interface";
+import {cloneDeep} from "lodash";
+import {ActivatedRoute} from "@angular/router";
+import {TemplateService} from "../../../../service/user/template/template.service";
+import {OperatorMetadataService} from "../../../../../workspace/service/operator-metadata/operator-metadata.service";
+import {OperatorPredicate} from "../../../../../workspace/types/workflow-common.interface";
 import {
   WORKFLOW_COMPILATION_ENDPOINT,
   WorkflowCompilingService,
 } from "../../../../../workspace/service/compile-workflow/workflow-compiling.service";
-import { DynamicSchemaService } from "../../../../../workspace/service/dynamic-schema/dynamic-schema.service";
-import { OperatorSchema } from "../../../../../workspace/types/operator-schema.interface";
+import {DynamicSchemaService} from "../../../../../workspace/service/dynamic-schema/dynamic-schema.service";
+import {OperatorSchema} from "../../../../../workspace/types/operator-schema.interface";
 import {
   OperatorPortSchemaMap,
   WorkflowCompilationResponse,
 } from "../../../../../workspace/types/workflow-compiling.interface";
 import {TemplatedWorkflowDraftService} from "./service/templated-workflow-draft.service";
+import {ExecuteWorkflowService} from "../../../../../workspace/service/execute-workflow/execute-workflow.service";
+import {ExecutionState} from "../../../../../workspace/types/execute-workflow.interface";
 
 interface ConfigurableSection {
   operatorID: string;
@@ -71,6 +72,8 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
   public sections: ConfigurableSection[] = [];
   public isLogin: boolean = this.userService.isLogin();
   public currentUid: number | undefined;
+  public executionState: ExecutionState = ExecutionState.Uninitialized;
+  public ExecutionState = ExecutionState;
 
   // Recreated whenever sections are rebuilt because each rebuild creates new FormGroup instances.
   private formChangesSub: Subscription | undefined;
@@ -86,6 +89,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
     private workflowActionService: WorkflowActionService,
     private templateService: TemplateService,
     private templatedWorkflowDraftService: TemplatedWorkflowDraftService,
+    private executeWorkflowService: ExecuteWorkflowService,
     private workflowPersistService: WorkflowPersistService,
     private operatorMetadataService: OperatorMetadataService,
     private dynamicSchemaService: DynamicSchemaService,
@@ -102,13 +106,43 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
         this.currentUid = this.userService.getCurrentUser()?.uid;
         this.isLogin = this.userService.isLogin();
       });
+
+    this.executionState = this.executeWorkflowService.getExecutionState().state;
+    this.executeWorkflowService
+      .getExecutionStateStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(event => {
+        this.executionState = event.current.state;
+      });
   }
 
   public get formValid(): boolean {
     return this.sections.every(s => s.form.valid);
   }
 
+  public get isWorkflowExecutionActive(): boolean {
+    return [
+      ExecutionState.Initializing,
+      ExecutionState.Running,
+      ExecutionState.Pausing,
+      ExecutionState.Paused,
+      ExecutionState.Resuming,
+      ExecutionState.Recovering,
+    ].includes(this.executionState);
+  }
+
+  public get submitDisabled(): boolean {
+    return !this.formValid || this.isWorkflowExecutionActive;
+  }
+
   public onJobFormSubmitted(): void {
+    if (this.isWorkflowExecutionActive) {
+      this.notificationService.warning(
+        "Cannot submit template properties while the workflow is running. Stop or wait for the workflow to finish before submitting changes."
+      );
+      return;
+    }
+
     if (!this.formValid) {
       this.notificationService.error("Invalid form.");
       return;

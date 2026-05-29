@@ -33,13 +33,17 @@
   </form>
 </div>
 
-<button
-  nz-button
-  nzType="primary"
-  [disabled]="!formValid"
-  (click)="onJobFormSubmitted()">
-  SUBMIT
-</button>
+<span
+  nz-tooltip
+  [nzTooltipTitle]="isWorkflowExecutionActive ? 'Cannot submit properties while the workflow is running.' : null">
+  <button
+    nz-button
+    nzType="primary"
+    [disabled]="submitDisabled"
+    (click)="onJobFormSubmitted()">
+    SUBMIT
+  </button>
+</span>
 
 <div class="readonly-embedded-workspace-container" *ngIf="wid">
   <div class="inner-scale">
