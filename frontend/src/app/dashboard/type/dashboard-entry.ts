@@ -19,11 +19,18 @@
 
 import { DashboardFile } from "./dashboard-file.interface";
 import { DashboardWorkflow } from "./dashboard-workflow.interface";
+import { DashboardTemplate } from "./dashboard-template.interface";
 import { DashboardProject } from "./dashboard-project.interface";
 import { DashboardDataset } from "./dashboard-dataset.interface";
-import {DashboardTemplate} from "./dashboard-template.interface";
-import { DashboardWorkflowComputingUnit } from "../../workspace/types/workflow-computing-unit";
-import { isDashboardDataset, isDashboardFile, isDashboardProject, isDashboardWorkflow, isDashboardTemplate, isDashboardWorkflowComputingUnit } from "./type-predicates";
+import { DashboardWorkflowComputingUnit } from "../../common/type/workflow-computing-unit";
+import {
+  isDashboardDataset,
+  isDashboardFile,
+  isDashboardProject,
+  isDashboardWorkflow,
+  isDashboardTemplate,
+  isDashboardWorkflowComputingUnit,
+} from "./type-predicates";
 import { EntityType } from "../../hub/service/hub.service";
 
 export interface UserInfo {

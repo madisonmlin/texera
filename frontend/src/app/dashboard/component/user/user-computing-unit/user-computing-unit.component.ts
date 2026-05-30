@@ -18,18 +18,18 @@
  */
 
 import { Component, Input, OnInit } from "@angular/core";
-import { ComputingUnitStatusService } from "../../../../workspace/service/computing-unit-status/computing-unit-status.service";
+import { ComputingUnitStatusService } from "../../../../common/service/computing-unit/computing-unit-status/computing-unit-status.service";
 import { DashboardEntry } from "../../../type/dashboard-entry";
 import {
   DashboardWorkflowComputingUnit,
   WorkflowComputingUnitType,
-} from "../../../../workspace/types/workflow-computing-unit";
+} from "../../../../common/type/workflow-computing-unit";
 import { extractErrorMessage } from "../../../../common/util/error";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
-import { NzModalService } from "ng-zorro-antd/modal";
+import { NzModalService, NzModalComponent } from "ng-zorro-antd/modal";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { UserService } from "../../../../common/service/user/user.service";
-import { WorkflowComputingUnitManagingService } from "../../../../workspace/service/workflow-computing-unit/workflow-computing-unit-managing.service";
+import { WorkflowComputingUnitManagingService } from "../../../../common/service/computing-unit/workflow-computing-unit/workflow-computing-unit-managing.service";
 import {
   parseResourceUnit,
   parseResourceNumber,
@@ -38,13 +38,53 @@ import {
   isComputingUnitShmTooLarge,
   getJvmMemorySliderConfig,
 } from "../../../../common/util/computing-unit.util";
-import { ComputingUnitActionsService } from "../../../service/user/computing-unit-actions/computing-unit-actions.service";
+import { ComputingUnitActionsService } from "../../../../common/service/computing-unit/computing-unit-actions/computing-unit-actions.service";
+import { NzCardComponent } from "ng-zorro-antd/card";
+import { NzSpaceCompactItemDirective } from "ng-zorro-antd/space";
+import { NzButtonComponent } from "ng-zorro-antd/button";
+import { NzWaveDirective } from "ng-zorro-antd/core/wave";
+import { ɵNzTransitionPatchDirective } from "ng-zorro-antd/core/transition-patch";
+import { NzIconDirective } from "ng-zorro-antd/icon";
+import { ɵɵCdkVirtualScrollViewport, ɵɵCdkFixedSizeVirtualScroll, ɵɵCdkVirtualForOf } from "@angular/cdk/overlay";
+import { NzListComponent } from "ng-zorro-antd/list";
+import { UserComputingUnitListItemComponent } from "./user-computing-unit-list-item/user-computing-unit-list-item.component";
+import { NzSelectComponent, NzOptionComponent } from "ng-zorro-antd/select";
+import { FormsModule } from "@angular/forms";
+import { NgFor, NgIf, TitleCasePipe } from "@angular/common";
+import { NzInputDirective } from "ng-zorro-antd/input";
+import { NzTooltipDirective } from "ng-zorro-antd/tooltip";
+import { NzSliderComponent } from "ng-zorro-antd/slider";
+import { NzAlertComponent } from "ng-zorro-antd/alert";
 
 @UntilDestroy()
 @Component({
   selector: "texera-computing-unit-section",
   templateUrl: "user-computing-unit.component.html",
   styleUrls: ["user-computing-unit.component.scss"],
+  imports: [
+    NzCardComponent,
+    NzSpaceCompactItemDirective,
+    NzButtonComponent,
+    NzWaveDirective,
+    ɵNzTransitionPatchDirective,
+    NzIconDirective,
+    ɵɵCdkVirtualScrollViewport,
+    ɵɵCdkFixedSizeVirtualScroll,
+    NzListComponent,
+    ɵɵCdkVirtualForOf,
+    UserComputingUnitListItemComponent,
+    NzModalComponent,
+    NzSelectComponent,
+    FormsModule,
+    NgFor,
+    NzOptionComponent,
+    NgIf,
+    NzInputDirective,
+    NzTooltipDirective,
+    NzSliderComponent,
+    NzAlertComponent,
+    TitleCasePipe,
+  ],
 })
 export class UserComputingUnitComponent implements OnInit {
   public entries: DashboardEntry[] = [];

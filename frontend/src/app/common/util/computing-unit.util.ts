@@ -19,7 +19,7 @@
 
 import { Component, inject } from "@angular/core";
 import { NZ_MODAL_DATA } from "ng-zorro-antd/modal";
-import { DashboardWorkflowComputingUnit } from "../../workspace/types/workflow-computing-unit";
+import { DashboardWorkflowComputingUnit } from "../type/workflow-computing-unit";
 
 @Component({
   template: `
@@ -68,6 +68,7 @@ import { DashboardWorkflowComputingUnit } from "../../workspace/types/workflow-c
       </tbody>
     </table>
   `,
+  standalone: false,
 })
 export class ComputingUnitMetadataComponent {
   readonly unit: DashboardWorkflowComputingUnit = inject(NZ_MODAL_DATA);
