@@ -2,11 +2,17 @@ import { Component } from "@angular/core";
 import {FieldWrapper, FormlyFieldConfig} from "@ngx-formly/core";
 import {merge} from "lodash";
 import {PresetKey} from "../../../../../common/formly/preset-wrapper/preset-wrapper.component";
+import {CommonModule, NgIf} from "@angular/common";
+import {UntilDestroy} from "@ngneat/until-destroy";
 
+@UntilDestroy()
 @Component({
   selector: "texera-configurable-property-wrapper",
   templateUrl: "./configurable-property-wrapper.component.html",
   styleUrls: ["./configurable-property-wrapper.component.scss"],
+  imports: [
+    CommonModule,
+  ],
 })
 export class ConfigurablePropertyWrapperComponent extends FieldWrapper {
   public static setupFieldConfig(

@@ -53,7 +53,6 @@ import { THROTTLE_TIME_MS } from "../../hub/component/workflow/detail/hub-workfl
 import { WorkflowCompilingService } from "../service/compile-workflow/workflow-compiling.service";
 import { DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_WORKSPACE } from "../../app-routing.constant";
 import { GuiConfigService } from "../../common/service/gui-config.service";
-import { checkIfWorkflowBroken } from "../../common/util/workflow-check";
 import { NzSpinComponent } from "ng-zorro-antd/spin";
 import { ResultPanelComponent } from "./result-panel/result-panel.component";
 import { WorkflowEditorComponent } from "./workflow-editor/workflow-editor.component";
@@ -65,6 +64,7 @@ import { PropertyEditorComponent } from "./property-editor/property-editor.compo
 import { FormlyRepeatDndComponent } from "../../common/formly/repeat-dnd/repeat-dnd.component";
 import {TemplateService} from "../../dashboard/service/user/template/template.service";
 import {Template} from "../../common/type/template";
+import {checkIfGraphBroken} from "../../common/util/graph-check";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -293,7 +293,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
     })
       .pipe(untilDestroyed(this))
       .subscribe(
-        (workflow: Workflow) => {
+        ({workflow}) => {
           this.loadWorkflowIntoWorkspace(workflow);
         },
         () => {

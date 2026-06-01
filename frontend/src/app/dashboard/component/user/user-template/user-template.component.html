@@ -32,7 +32,7 @@
           nzTheme="outline"></i>
         <span>Create Template</span>
       </button>
-      <nz-button-group
+      <nz-space-compact
         class="utility-button-group"
         ngbDropdown>
         <texera-sort-button (sortMethodChange)="sortMethod = $event; search()"></texera-sort-button>
@@ -101,7 +101,7 @@
             nzTheme="outline"
             nzType="delete"></i>
         </button>
-      </nz-button-group>
+      </nz-space-compact>
       <texera-filters #filters></texera-filters>
     </div>
   </nz-card>
@@ -113,7 +113,7 @@
       name="search-input-box"
       nzMode="tags"
       nzPlaceHolder="Search all templates"
-      [nzBorderless]="true"
+      nzVariant="borderless"
       [nzOpen]="false"
       ngDefaultControl
       [(ngModel)]="filters.masterFilterList"

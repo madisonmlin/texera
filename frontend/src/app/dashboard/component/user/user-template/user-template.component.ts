@@ -17,8 +17,8 @@
  * under the License.
  */
 
-import {AfterViewInit, Component, inject, OnInit, ViewChild} from "@angular/core";
-import {DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_WORKSPACE} from "../../../../app-routing.constant";
+import {AfterViewInit, Component, OnInit, ViewChild} from "@angular/core";
+import {DASHBOARD_USER_TEMPLATE} from "../../../../app-routing.constant";
 import {NzModalService} from "ng-zorro-antd/modal";
 import {UserService} from "../../../../common/service/user/user.service";
 import {Router} from "@angular/router";
@@ -32,23 +32,48 @@ import {FiltersComponent} from "../filters/filters.component";
 import {SortMethod} from "../../../type/sort-method";
 import {firstValueFrom, from, lastValueFrom, Observable, of} from "rxjs";
 import {map, mergeMap, switchMap, tap} from "rxjs/operators";
-import workflow from "../../../../../assets/workflow_templates/scGPT_FINAL.json";
 import {DEFAULT_TEMPLATE_NAME, TemplateService} from "../../../service/user/template/template.service";
-import {NzUploadFile} from "ng-zorro-antd/upload";
+import {NzUploadFile, NzUploadModule} from "ng-zorro-antd/upload";
 import {NotificationService} from "../../../../common/service/notification/notification.service";
 import {WorkflowContent} from "../../../../common/type/workflow";
-import {DEFAULT_WORKFLOW_NAME} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import JSZip from "jszip";
 import {DownloadService} from "../../../service/user/download/download.service";
-import {DashboardWorkflow} from "../../../type/dashboard-workflow.interface";
-import {isDefined} from "../../../../common/util/predicate";
 import {DashboardTemplate} from "../../../type/dashboard-template.interface";
 import {GuiConfigService} from "../../../../common/service/gui-config.service";
+import {CommonModule} from "@angular/common";
+import {FormsModule} from "@angular/forms";
+import {NzButtonModule} from "ng-zorro-antd/button";
+import {NzCardModule} from "ng-zorro-antd/card";
+import {NzIconModule} from "ng-zorro-antd/icon";
+import {NzPopconfirmModule} from "ng-zorro-antd/popconfirm";
+import {NzSelectModule} from "ng-zorro-antd/select";
+import {SortButtonComponent} from "../sort-button/sort-button.component";
+import {FiltersInstructionsComponent} from "../filters-instructions/filters-instructions.component";
+import {NzTooltipModule} from "ng-zorro-antd/tooltip";
+import {NzDropdownModule} from "ng-zorro-antd/dropdown";
+import {NzSpaceCompactComponent} from "ng-zorro-antd/space";
 
 @UntilDestroy()
 @Component({
   templateUrl: "./user-template.component.html",
-  styleUrls: ["./user-template.component.scss"]
+  styleUrls: ["./user-template.component.scss"],
+  imports: [
+    CommonModule,
+    FormsModule,
+    NzButtonModule,
+    NzSpaceCompactComponent,
+    NzCardModule,
+    NzIconModule,
+    NzPopconfirmModule,
+    NzSelectModule,
+    NzTooltipModule,
+    NzUploadModule,
+    NzDropdownModule,
+    SortButtonComponent,
+    FiltersComponent,
+    FiltersInstructionsComponent,
+    SearchResultsComponent,
+  ],
 })
 export class UserTemplateComponent implements OnInit, AfterViewInit {
   private _searchResultsComponent?: SearchResultsComponent;

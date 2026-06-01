@@ -17,9 +17,9 @@
  * under the License.
  */
 
-import {FormlyFieldConfig} from "@ngx-formly/core";
+import {FormlyFieldConfig, FormlyModule} from "@ngx-formly/core";
 import {FormlyJsonschema} from "@ngx-formly/core/json-schema";
-import {FormGroup} from "@angular/forms";
+import {FormGroup, ReactiveFormsModule} from "@angular/forms";
 import {AfterViewInit, Component} from "@angular/core";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {NotificationService} from "../../../../../common/service/notification/notification.service";
@@ -49,6 +49,10 @@ import {
 import {TemplatedWorkflowDraftService} from "./service/templated-workflow-draft.service";
 import {ExecuteWorkflowService} from "../../../../../workspace/service/execute-workflow/execute-workflow.service";
 import {ExecutionState} from "../../../../../workspace/types/execute-workflow.interface";
+import {CommonModule} from "@angular/common";
+import {NzButtonModule} from "ng-zorro-antd/button";
+import {NzTooltipModule} from "ng-zorro-antd/tooltip";
+import {WorkspaceComponent} from "../../../../../workspace/component/workspace.component";
 
 interface ConfigurableSection {
   operatorID: string;
@@ -63,6 +67,14 @@ interface ConfigurableSection {
   templateUrl: "./templated-workflow-creation.component.html",
   styleUrls: ["./templated-workflow-creation.component.scss"],
   providers: [TemplatedWorkflowDraftService],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    FormlyModule,
+    NzButtonModule,
+    NzTooltipModule,
+    WorkspaceComponent,
+  ],
 })
 export class TemplatedWorkflowCreationComponent implements AfterViewInit {
   public tid: number | undefined;

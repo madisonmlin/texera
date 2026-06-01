@@ -55,7 +55,7 @@ import concaveman from "concaveman";
 import { OperatorResultSummary, AgentService } from "../../service/agent/agent.service";
 import { NzNoAnimationDirective } from "ng-zorro-antd/core/animation";
 import { ContextMenuComponent } from "./context-menu/context-menu/context-menu.component";
-import { NgIf } from "@angular/common";
+import {NgClass, NgIf} from "@angular/common";
 import { AgentInteractionComponent } from "../agent/agent-interaction/agent-interaction.component";
 
 // jointjs interactive options for enabling and disabling interactivity
@@ -97,7 +97,7 @@ export const MAIN_CANVAS = {
   selector: "texera-workflow-editor",
   templateUrl: "workflow-editor.component.html",
   styleUrls: ["workflow-editor.component.scss"],
-  imports: [NzDropdownMenuComponent, NzNoAnimationDirective, ContextMenuComponent, NgIf, AgentInteractionComponent],
+  imports: [NgClass, NzDropdownMenuComponent, NzNoAnimationDirective, ContextMenuComponent, NgIf, AgentInteractionComponent],
 })
 export class WorkflowEditorComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy {
   @Input() mode?: "workflow" | "template" = "workflow";
