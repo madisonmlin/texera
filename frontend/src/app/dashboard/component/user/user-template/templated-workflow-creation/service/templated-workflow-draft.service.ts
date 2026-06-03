@@ -50,14 +50,20 @@ export class TemplatedWorkflowDraftService {
     };
   }
 
-  public hasSchemaDrivingChange(operatorID: string, nextModel: Record<string, any>): boolean {
-    const draftFileName = this.operatorIdToProperties[operatorID]?.fileName;
+  public mergeSectionModelIfChanged(operatorID: string, model: Record<string, any>): boolean {
+    const current = this.operatorIdToProperties[operatorID] ?? {};
 
-    return (
-      nextModel.fileName !== undefined &&
-      nextModel.fileName !== "" &&
-      nextModel.fileName !== draftFileName
-    );
+    const next = {
+      ...current,
+      ...cloneDeep(model),
+    };
+
+    if (isEqual(current, next)) {
+      return false;
+    }
+
+    this.operatorIdToProperties[operatorID] = next;
+    return true;
   }
 
   public buildDraftLogicalPlan(content: WorkflowContent): LogicalPlan {

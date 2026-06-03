@@ -402,9 +402,13 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
 
     const valueChangeStreams = this.sections.map(section =>
       section.form.valueChanges.pipe(
-        map(nextModel => this.hasSchemaDrivingChange(section, nextModel)),
-        tap(() => this.mergeSectionFormValuesIntoOperatorProperties(section)),
-        filter(hasSchemaDrivingChange => hasSchemaDrivingChange)
+        map(nextModel =>
+          this.templatedWorkflowDraftService.mergeSectionModelIfChanged(
+            section.operatorID,
+            nextModel
+          )
+        ),
+        filter(changed => changed)
       )
     );
 
@@ -415,12 +419,11 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
         untilDestroyed(this)
       )
       .subscribe(response => {
+        if (!response.operatorOutputSchemas) {
+          return;
+        }
         this.applyDraftSchemaPropagationResult(response.operatorOutputSchemas);
       });
-  }
-
-  private hasSchemaDrivingChange(section: ConfigurableSection, nextModel: Record<string, any>): boolean {
-    return this.templatedWorkflowDraftService.hasSchemaDrivingChange(section.operatorID, nextModel);
   }
 
   private compileDraftWorkflowForDynamicSchemas(): Observable<WorkflowCompilationResponse> {
