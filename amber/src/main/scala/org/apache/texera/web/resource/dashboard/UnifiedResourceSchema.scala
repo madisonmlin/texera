@@ -73,6 +73,7 @@ object UnifiedResourceSchema {
       isDatasetPublic: Field[java.lang.Boolean] = DSL.cast(null, classOf[java.lang.Boolean]),
       isDatasetDownloadable: Field[java.lang.Boolean] = DSL.cast(null, classOf[java.lang.Boolean]),
       datasetUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
+      datasetCoverImage: Field[String] = DSL.cast(null, classOf[String]),
       tid: Field[Integer] = DSL.cast(null, classOf[Integer]),
       templateUserAccess: Field[PrivilegeEnum] = DSL.castNull(classOf[PrivilegeEnum]),
   ): UnifiedResourceSchema = {
@@ -99,6 +100,7 @@ object UnifiedResourceSchema {
         isDatasetPublic -> isDatasetPublic.as("is_dataset_public"),
         isDatasetDownloadable -> isDatasetDownloadable.as("is_dataset_downloadable"),
         datasetUserAccess -> datasetUserAccess.as("user_dataset_access"),
+        datasetCoverImage -> datasetCoverImage.as("cover_image"),
         tid -> tid.as("tid"),
         templateUserAccess -> templateUserAccess.as("template_privilege"),
       )

@@ -50,7 +50,7 @@ import { ResultExportationComponent } from "../result-exportation/result-exporta
 import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
 import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
 import { PanelService } from "../../service/panel/panel.service";
-import { DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_WORKFLOW } from "../../../app-routing.constant";
+import { USER_TEMPLATE, USER_WORKFLOW } from "../../../app-routing.constant";
 import { ComputingUnitStatusService } from "../../../common/service/computing-unit/computing-unit-status/computing-unit-status.service";
 import { ComputingUnitState } from "../../../common/type/computing-unit-connection.interface";
 import { ComputingUnitSelectionComponent } from "../power-button/computing-unit-selection.component";
@@ -139,7 +139,7 @@ export class MenuComponent implements OnInit, OnDestroy {
   public showGrid: boolean = false;
   public showNumWorkers: boolean = false;
   public showStatus: boolean = false;
-  protected readonly DASHBOARD_USER_WORKFLOW = DASHBOARD_USER_WORKFLOW;
+  protected readonly USER_WORKFLOW = USER_WORKFLOW;
 
   @Input() public mode: "workflow" | "template" = "workflow";
   @Input() public writeAccess: boolean = false;
@@ -327,8 +327,8 @@ export class MenuComponent implements OnInit, OnDestroy {
     const refY = this.showNumWorkers ? -55 : -35;
     const paperModel = this.workflowActionService.getJointGraphWrapper().mainPaper.model as any;
     paperModel.getElements().forEach((el: any) => {
-      el.attr(".operator-status/ref-x", -10);
-      el.attr(".operator-status/ref-y", refY);
+      el.attr(".texera-operator-state/ref-x", -10);
+      el.attr(".texera-operator-state/ref-y", refY);
     });
   }
 
@@ -350,7 +350,7 @@ export class MenuComponent implements OnInit, OnDestroy {
 
     modalRef.afterClose.pipe(untilDestroyed(this)).subscribe(result => {
       if (result?.userRevokedOwnAccess) {
-        this.router.navigate([DASHBOARD_USER_WORKFLOW]);
+        this.router.navigate([USER_WORKFLOW]);
       }
     });
   }
@@ -484,7 +484,7 @@ export class MenuComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.router.navigate([`${DASHBOARD_USER_WORKFLOW}/${workflow.wid}`])
+    this.router.navigate([`${USER_WORKFLOW}/${workflow.wid}`])
   }
 
   public handleKill(): void {
@@ -557,11 +557,9 @@ export class MenuComponent implements OnInit, OnDestroy {
   }
 
   public toggleRegion(): void {
-    this.workflowActionService
-      .getJointGraphWrapper()
-      .jointGraph.getElements()
-      .filter(el => el.get("type") === "region") // small improvement here too
-      .forEach(el => el.attr("body/visibility", this.showRegion ? "visible" : "hidden"));
+    // The editor owns applying this to the shared JointJS model (both canvas and mini-map) and
+    // reapplies it whenever regions are recreated during execution (see #5120, #4027).
+    this.workflowActionService.getJointGraphWrapper().setRegionsDisplayed(this.showRegion);
   }
 
   /**
@@ -714,7 +712,7 @@ export class MenuComponent implements OnInit, OnDestroy {
     this.templateService.createTemplateFromWorkflow(workflow.wid)
       .pipe(untilDestroyed(this))
       .subscribe((template) => {
-        this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/${template.template.tid}`])
+        this.router.navigate([`${USER_TEMPLATE}/${template.template.tid}`])
       })
   }
 
@@ -903,9 +901,9 @@ export class MenuComponent implements OnInit, OnDestroy {
 
   public get dashboardLink(): string {
     if (this.isWorkflowMode) {
-      return DASHBOARD_USER_WORKFLOW
+      return USER_WORKFLOW
     } else {
-      return DASHBOARD_USER_TEMPLATE
+      return USER_TEMPLATE
     }
   }
 

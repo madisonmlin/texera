@@ -51,7 +51,7 @@ import { WorkflowMetadata } from "src/app/dashboard/type/workflow-metadata.inter
 import { EntityType, HubService } from "../../hub/service/hub.service";
 import { THROTTLE_TIME_MS } from "../../hub/component/workflow/detail/hub-workflow-detail.component";
 import { WorkflowCompilingService } from "../service/compile-workflow/workflow-compiling.service";
-import { DASHBOARD_USER_TEMPLATE, DASHBOARD_USER_WORKSPACE } from "../../app-routing.constant";
+import { USER_TEMPLATE, USER_WORKSPACE } from "../../app-routing.constant";
 import { GuiConfigService } from "../../common/service/gui-config.service";
 import { NzSpinComponent } from "ng-zorro-antd/spin";
 import { ResultPanelComponent } from "./result-panel/result-panel.component";
@@ -501,7 +501,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (this.wid !== updatedWorkflow.wid && !this.isEmbedded) {
         this.wid = updatedWorkflow.wid;
-        this.location.go(`${DASHBOARD_USER_WORKSPACE}/${updatedWorkflow.wid}`);
+        this.location.go(`${USER_WORKSPACE}/${updatedWorkflow.wid}`);
       }
 
       this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
@@ -511,7 +511,7 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
 
       if (this.tid !== updatedTemplate.tid) {
         this.tid = updatedTemplate.tid;
-        this.location.go(`${DASHBOARD_USER_TEMPLATE}/${updatedTemplate.tid}`);
+        this.location.go(`${USER_TEMPLATE}/${updatedTemplate.tid}`);
       }
 
       // normalize into UI workflow metadata
