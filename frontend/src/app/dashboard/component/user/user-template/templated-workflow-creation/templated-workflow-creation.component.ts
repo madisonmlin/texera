@@ -349,7 +349,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
           creationTime: undefined,
           lastModifiedTime: undefined,
           isPublished: 0,
-          readonly: false,
+          readonly: true,
           content: template.content,
         });
 

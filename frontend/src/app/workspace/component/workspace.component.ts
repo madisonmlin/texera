@@ -498,13 +498,18 @@ export class WorkspaceComponent implements OnInit, AfterViewInit, OnDestroy {
   private handlePersistSuccess(entity: Workflow | Template): void {
     if (this.isWorkflowMode()) {
       const updatedWorkflow = entity as Workflow;
+      const currentMetadata = this.workflowActionService.getWorkflowMetadata();
 
       if (this.wid !== updatedWorkflow.wid && !this.isEmbedded) {
         this.wid = updatedWorkflow.wid;
         this.location.go(`${USER_WORKSPACE}/${updatedWorkflow.wid}`);
       }
 
-      this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
+      this.workflowActionService.setWorkflowMetadata({
+        ...currentMetadata,
+        ...updatedWorkflow,
+        readonly: updatedWorkflow.readonly ?? currentMetadata.readonly,
+      });
 
     } else if (this.isTemplateMode()) {
       const updatedTemplate = entity as Template;
