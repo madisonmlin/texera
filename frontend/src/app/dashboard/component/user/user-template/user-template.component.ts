@@ -446,11 +446,6 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
     return;
   }
 
-  public onClickOpenScGPTJobAddComponent(): void {
-    this.router.navigate([`${USER_TEMPLATE}/1`]);
-    return;
-  }
-
   public toggleSelection(): void {
     const allSelected = this.searchResultsComponent.entries.every(entry => entry.checked);
     if (allSelected) {
