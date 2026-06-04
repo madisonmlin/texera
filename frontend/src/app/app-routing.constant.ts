@@ -37,8 +37,8 @@ export const USER_DATASET_CREATE = `${USER_DATASET}/create`;
 export const USER_COMPUTING_UNIT = `${USER}/compute`;
 export const USER_QUOTA = `${USER}/quota`;
 export const USER_DISCUSSION = `${USER}/discussion`;
-export const USER_TEMPLATE = `${DASHBOARD_USER}/template`;
-export const USER_TEMPLATED_WORKFLOW = `${DASHBOARD_USER}/template/create-workflow`;
+export const USER_TEMPLATE = `${USER}/template`;
+export const USER_TEMPLATED_WORKFLOW = `${USER}/template/create-workflow`;
 
 export const ADMIN = "/admin";
 export const ADMIN_USER = `${ADMIN}/user`;

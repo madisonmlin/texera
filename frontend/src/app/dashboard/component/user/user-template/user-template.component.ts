@@ -18,7 +18,7 @@
  */
 
 import {AfterViewInit, Component, OnInit, ViewChild} from "@angular/core";
-import {DASHBOARD_USER_TEMPLATE} from "../../../../app-routing.constant";
+import {USER_TEMPLATE} from "../../../../app-routing.constant";
 import {NzModalService} from "ng-zorro-antd/modal";
 import {UserService} from "../../../../common/service/user/user.service";
 import {Router} from "@angular/router";
@@ -194,7 +194,7 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
       .subscribe({
         next: (tid: number | undefined) => {
           // Use the tid here for navigation
-          this.router.navigate([DASHBOARD_USER_TEMPLATE, tid]).then(null);
+          this.router.navigate([USER_TEMPLATE, tid]).then(null);
         },
         error: (err: unknown) => this.notificationService.error("Template creation failed"),
       });
@@ -447,7 +447,7 @@ export class UserTemplateComponent implements OnInit, AfterViewInit {
   }
 
   public onClickOpenScGPTJobAddComponent(): void {
-    this.router.navigate([`${DASHBOARD_USER_TEMPLATE}/1`]);
+    this.router.navigate([`${USER_TEMPLATE}/1`]);
     return;
   }
 
