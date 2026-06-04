@@ -188,11 +188,11 @@
       *ngIf="entry.type==='template'"
       nz-button
       nzType="text"
-      title="Create Workflow"
-      (click)="openCreateWorkflowFromTemplatePage(this.entry.id)">
+      title="Edit Template"
+      (click)="openTemplateWorkspace(this.entry.id)">
       <i
         nz-icon
-        nzType="project"></i>
+        nzType="edit"></i>
     </button>
     <button
       *ngIf="entry.type==='workflow'"

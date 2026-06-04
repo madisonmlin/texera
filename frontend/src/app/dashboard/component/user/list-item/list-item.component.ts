@@ -177,7 +177,7 @@ export class ListItemComponent implements OnChanges {
       if (typeof this.entry.id === "number") {
         this.disableDelete = !this.entry.template.isOwner;
         this.owners = this.entry.accessibleUserIds;
-        this.entryLink = [USER_TEMPLATE, String(this.entry.id)];
+        this.entryLink = [USER_TEMPLATED_WORKFLOW, String(this.entry.id)];
         this.iconType = "experiment";
         this.size = this.entry.size;
       }
@@ -393,6 +393,10 @@ export class ListItemComponent implements OnChanges {
 
   openCreateWorkflowFromTemplatePage(tid: number | undefined): void {
     this.router.navigate([`${USER_TEMPLATED_WORKFLOW}/${tid}`]);
+  }
+
+  openTemplateWorkspace(tid: number | undefined): void {
+    this.router.navigate([`${USER_TEMPLATE}/${tid}`]);
   }
 
   openDetailModal(wid: number | undefined): void {
