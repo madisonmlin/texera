@@ -45,13 +45,16 @@
   </button>
 </span>
 
-<div class="readonly-embedded-workspace-container" *ngIf="wid">
+<div
+  class="readonly-embedded-workspace-container"
+  *ngIf="wid"
+  [class.hidden-before-submit]="!showEmbeddedWorkspace"
+>
   <div class="inner-scale">
     <texera-workspace
       [wid]="wid"
       [isEmbedded]="true"
       [mode]="'workflow'"
-      (workspaceReady)="onWorkspaceReady($event)"
     >
     </texera-workspace>
   </div>

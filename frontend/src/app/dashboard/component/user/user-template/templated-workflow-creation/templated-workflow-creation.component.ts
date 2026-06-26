@@ -53,6 +53,7 @@ import {CommonModule} from "@angular/common";
 import {NzButtonModule} from "ng-zorro-antd/button";
 import {NzTooltipModule} from "ng-zorro-antd/tooltip";
 import {WorkspaceComponent} from "../../../../../workspace/component/workspace.component";
+import {TemplatedWorkflowService} from "../../../../service/user/templated-workflow/templated-workflow.service";
 
 interface ConfigurableSection {
   operatorID: string;
@@ -89,17 +90,15 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
 
   // Recreated whenever sections are rebuilt because each rebuild creates new FormGroup instances.
   private formChangesSub: Subscription | undefined;
-
-  // The first submit creates the workflow. Then the embedded workspace loads the newly created
-  // workflow and emits workspaceReady. This flag makes sure workspaceReady applies staged values
-  // only as part of that explicit submit/create flow.
-  private pendingApplyAfterCreate = false;
+  private workflowReady: boolean = false;
+  public showEmbeddedWorkspace = false;
 
   constructor(
     private notificationService: NotificationService,
     private userService: UserService,
     private workflowActionService: WorkflowActionService,
     private templateService: TemplateService,
+    private templatedWorkflowService: TemplatedWorkflowService,
     private templatedWorkflowDraftService: TemplatedWorkflowDraftService,
     private executeWorkflowService: ExecuteWorkflowService,
     private workflowPersistService: WorkflowPersistService,
@@ -144,10 +143,15 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
   }
 
   public get submitDisabled(): boolean {
-    return !this.formValid || this.isWorkflowExecutionActive;
+    return !this.workflowReady || !this.formValid || this.isWorkflowExecutionActive;
   }
 
   public onJobFormSubmitted(): void {
+    if (!this.workflowReady) {
+      this.notificationService.warning("Workflow is still loading. Please try again after it finishes loading.");
+      return;
+    }
+
     if (this.isWorkflowExecutionActive) {
       this.notificationService.warning(
         "Cannot submit template properties while the workflow is running. Stop or wait for the workflow to finish before submitting changes."
@@ -160,79 +164,62 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
       return;
     }
 
-    if (!this.wid) {
-      this.pendingApplyAfterCreate = true;
-
-      this.createTemplatedWorkflow()
-        .pipe(untilDestroyed(this))
-        .subscribe({
-          next: wid => {
-            this.wid = wid;
-          },
-          error: err => {
-            this.pendingApplyAfterCreate = false;
-            console.warn("Failed to create templated workflow", err);
-            this.notificationService.error("Failed to create workflow from template.");
-          },
-        });
-    } else {
-      this.applyJobFormToOperators()
-        .pipe(untilDestroyed(this))
-        .subscribe({
-          error: err => {
-            console.warn("Failed to update templated workflow", err);
-            this.notificationService.error("Failed to update workflow.");
-          },
-        });
-    }
-  }
-
-  public onWorkspaceReady(loadedWid?: number): void {
-    if (!this.pendingApplyAfterCreate) {
+    if (!this.tid) {
+      this.notificationService.error("Missing template ID.");
       return;
     }
 
-    if (Number(loadedWid) !== Number(this.wid)) {
+    if (!this.wid) {
+      this.notificationService.error("Missing workflow ID.");
       return;
     }
 
     this.applyJobFormToOperators()
-      .pipe(
-        finalize(() => {
-          this.pendingApplyAfterCreate = false;
-        }),
-        untilDestroyed(this)
-      )
+      .pipe(untilDestroyed(this))
       .subscribe({
+        next: () => {
+          this.showEmbeddedWorkspace = true;
+        },
         error: err => {
-          console.warn("Failed to apply templated workflow properties", err);
-          this.notificationService.error("Failed to apply workflow properties.");
+          console.warn("Failed to update templated workflow", err);
+          this.notificationService.error("Failed to update workflow.");
         },
       });
   }
 
-  private createTemplatedWorkflow(): Observable<number> {
-    return this.http.post<number>(`${AppSettings.getApiEndpoint()}/templated-workflow/build?tid=${this.tid}`, {});
-  }
-
-  private applyJobFormToOperators(): Observable<Workflow> {
+  private applyJobFormToOperators(forceUpdate = false): Observable<Workflow> {
     this.mergeFormValuesIntoOperatorProperties();
 
-    if (this.workflowChanged()) {
-      this.writeOperatorPropertiesToGraph();
-
-      const workflow = this.workflowActionService.getWorkflow();
-      return this.workflowPersistService.persistWorkflow(workflow).pipe(
-        tap(() => {
-          this.notificationService.success("Workflow updated.");
-        })
-      );
-    }
-
-    if (!this.pendingApplyAfterCreate) {
+    if (!forceUpdate && !this.workflowChanged()) {
       this.notificationService.info("No changes made to the workflow.");
+      return of(this.workflowActionService.getWorkflow());
     }
-    return of(this.workflowActionService.getWorkflow());
+
+    this.writeOperatorPropertiesToGraph();
+    const payload = this.getConfigurablePropertyUpdatePayload();
+
+    return this.templatedWorkflowService.updateTemplatedWorkflowProperties(this.wid!, payload).pipe(
+      tap(updatedWorkflow => {
+        const currentMetadata = this.workflowActionService.getWorkflowMetadata();
+        this.workflowActionService.setWorkflowMetadata({
+          ...currentMetadata,
+          lastModifiedTime: updatedWorkflow.lastModifiedTime,
+        });
+        this.notificationService.success("Workflow updated.");
+      })
+    );
+  }
+
+  private getConfigurablePropertyUpdatePayload(): {
+    operatorProperties: Record<string, Record<string, unknown>>;
+  } {
+    const operatorProperties: Record<string, Record<string, unknown>> = {};
+
+    for (const section of this.sections) {
+      operatorProperties[section.operatorID] = { ...section.model };
+    }
+
+    return { operatorProperties };
   }
 
   private mergeFormValuesIntoOperatorProperties(): void {
@@ -324,6 +311,7 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
+    this.workflowReady = false;
     this.tid = this.route.snapshot.params.tid;
     if (!this.tid) return;
 
@@ -333,25 +321,34 @@ export class TemplatedWorkflowCreationComponent implements AfterViewInit {
     })
       .pipe(untilDestroyed(this))
       .subscribe(({ template }) => {
+        if (!this.tid) return;
+
         this.template = template.content;
-        this.pendingApplyAfterCreate = false;
         this.templatedWorkflowDraftService.initialize(template.content);
 
-        // Load the template into WorkflowActionService for initial preview/schema setup.
-        // User form edits after this point should use compileDraftWorkflowForDynamicSchemas()
-        // and should not call setOperatorProperty() until SUBMIT.
-        this.workflowActionService.destroySharedModel();
-        this.workflowActionService.setNewSharedModel(undefined, this.userService.getCurrentUser());
-        this.workflowActionService.reloadWorkflow({
-          wid: undefined,
-          name: "template-preview",
-          description: undefined,
-          creationTime: undefined,
-          lastModifiedTime: undefined,
-          isPublished: 0,
-          readonly: true,
-          content: template.content,
-        });
+        this.templatedWorkflowService.createTemplatedWorkflow(this.tid)
+          .pipe(
+            switchMap(wid => {
+              this.wid = wid;
+
+              this.workflowActionService.destroySharedModel();
+              this.workflowActionService.setNewSharedModel(undefined, this.userService.getCurrentUser());
+
+              return this.workflowPersistService.retrieveWorkflow(this.wid);
+            }),
+            untilDestroyed(this)
+          )
+          .subscribe({
+            next: workflow => {
+              this.workflowActionService.reloadWorkflow(workflow);
+              this.workflowReady = true;
+            },
+            error: err => {
+              this.workflowReady = false;
+              console.warn("Failed to create/load templated workflow", err);
+              this.notificationService.error("Failed to create workflow from template.");
+            },
+          });
 
         this.rebuildSectionsFromDynamicSchemas();
 
